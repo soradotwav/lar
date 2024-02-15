@@ -1,64 +1,52 @@
-const { StringSelectMenuBuilder, StringSelectMenuOptionBuilder } = require('@discordjs/builders');
-const { SlashCommandBuilder, ActionRowBuilder, ComponentType } = require('discord.js');
+const { SlashCommandBuilder, ActionRowBuilder, StringSelectMenuBuilder, StringSelectMenuOptionBuilder } = require('discord.js');
 
-async function initialQuestion(interaction) {
-    const ingameName = interaction.options.getString('rsi-handle');
-    const discordUser = interaction.user; //user tag
+const serviceType = [
+    {
+        label: 'Ammo',
+        value: 'ammo',
+    },
+    {
+        label: 'Armor',
+        value: 'armor',
+    },
+    {
+        label: 'Medical',
+        value: 'medical',
+    },
+    {
+        label: 'Vehicle',
+        value: 'vehicle',
+    },
+    {
+        label: 'Weapon',
+        value: 'weapon',
+    },
+]
 
-    const selectionOptions = [
-        {
-            label: 'Ammo',
-            value: 'AMMO'
-        },
-        {
-            label: 'Armor',
-            value: 'ARMOR'
-        },
-        {
-            label: 'Medical',
-            value: 'MEDICAL'
-        },
-        {
-            label: 'Vehicle',
-            value: 'VEHICLE'
-        },
-        {
-            label: 'Weapon',
-            value: 'WEAPON'
-        },
-    ]
-
-    const resupplyTypeSelector = new ActionRowBuilder().addComponents(
-        new StringSelectMenuBuilder()
-            .setCustomId(interaction.id)
-            .setPlaceholder('Select Request Type')
-            .setMinValues(1)
-            .setMaxValues(selectionOptions.length)
-            .addOptions(
-                selectionOptions.map((selType) => {
-                    return new StringSelectMenuOptionBuilder()
-                        .setLabel(selType.label)
-                        .setValue(selType.value);
-                })
-            )
-    )
-
-    const reply = await interaction.reply({
-        content: `Hello ${discordUser}, do you confirm that your username is ${ingameName}`,
-        ephemeral: true,
-        components: [resupplyTypeSelector],
+function createSelector(id, array, multi) {
+    const options = array.map(item => {
+        return new StringSelectMenuOptionBuilder()
+            .setValue(item.value)
+            .setLabel(item.label)
     });
 
-    const collector = reply.createMessageComponentCollector({
-        componentType: ComponentType.StringSelect,
-        filter: (i) => i.user.id === interaction.user.id && i.customId == interaction.id,
-        time: 60_000,
-    })
-
-    collector.on('collect', (interaction) => {
-        console.log(interaction.values);
-    })
-};
+    if(multi) {
+        return new ActionRowBuilder()
+            .addComponents(new StringSelectMenuBuilder()
+                .setCustomId(id)
+                .setMinValues(1)
+                .setMaxValues(array.length)
+                .setPlaceholder('Select an option...')
+                .addOptions(options));
+    } else {
+        return new ActionRowBuilder()
+            .addComponents(new StringSelectMenuBuilder()
+                .setCustomId(id)
+                .setMinValues(1)
+                .setPlaceholder('Select an option...')
+                .addOptions(options));
+    }
+}
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -68,7 +56,29 @@ module.exports = {
             option.setName('rsi-handle')
                 .setDescription('Your in-game name in Star Citizen.')
                 .setRequired(true)),
-    execute(interaction) {
-        initialQuestion(interaction);
+    async execute(interaction) {
+        const response = await interaction.reply({
+            content: 'What resupply survices do you require?',
+            ephemeral: true,
+            components: [createSelector('service-selector', serviceType, true)],
+        });
+
+        const ingameName = interaction.options.getString('rsi-handle');
+        const discordUser = interaction.user; //user tag
+
+        const collectorFilter = i => i.user.id === interaction.user.id;
+
+        try {
+            const confirmation = await response.awaitMessageComponent({ filter: collectorFilter, time: 60_000 });
+        
+            await interaction.editReply({
+                content: confirmation.values.join(', '),
+                components: [],
+            });
+
+        } catch (e) {
+            console.log(e);
+            await interaction.editReply({ content: 'Confirmation not received within 1 minute, cancelling', components: [] });
+        }
     }
 };
