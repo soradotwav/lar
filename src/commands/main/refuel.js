@@ -139,76 +139,76 @@ module.exports = {
                 })
             );
 
-        // Select Menu for Nearest Planet
-        const selectPlanet = new StringSelectMenuBuilder()
-            .setCustomId('selectPlanet')
-            .setPlaceholder('Select the nearest planet to you...')
-            .addOptions(
-                selectables.stantonLocations.map(object => {
-                    return new StringSelectMenuOptionBuilder()
-                        .setLabel(object.label)
-                        .setValue(object.label)
-                })
-            );
+            // Select Menu for Nearest Planet
+            const selectPlanet = new StringSelectMenuBuilder()
+                .setCustomId('selectPlanet')
+                .setPlaceholder('Select the nearest planet to you...')
+                .addOptions(
+                    selectables.stantonLocations.map(object => {
+                        return new StringSelectMenuOptionBuilder()
+                            .setLabel(object.label)
+                            .setValue(object.label)
+                    })
+                );
 
-        // Select Menu for Ship Size
-        const selectShipSize = new StringSelectMenuBuilder()
-            .setCustomId('selectShipSize')
-            .setPlaceholder('Select the size of your ship...')
-            .addOptions(
-                selectables.shipSize.map(object => {
-                    return new StringSelectMenuOptionBuilder()
-                        .setLabel(object.label)
-                        .setValue(object.label)
-                })
-            );
+            // Select Menu for Ship Size
+            const selectShipSize = new StringSelectMenuBuilder()
+                .setCustomId('selectShipSize')
+                .setPlaceholder('Select the size of your ship...')
+                .addOptions(
+                    selectables.shipSize.map(object => {
+                        return new StringSelectMenuOptionBuilder()
+                            .setLabel(object.label)
+                            .setValue(object.label)
+                    })
+                );
     
-        // Cancel Button that deletes current thread
-        const threadCancelButton = new ButtonBuilder()
+            // Cancel Button that deletes current thread
+            const threadCancelButton = new ButtonBuilder()
                 .setCustomId('threadCancelButton')
                 .setLabel('Cancel')
                 .setStyle(ButtonStyle.Danger);
 
 
-        // Response to initial command
-        const selectMenuResponse = await interaction.reply({
-            components: [new ActionRowBuilder().addComponents(selectSystem)],
-            ephemeral: true
-        })
+            // Response to initial command
+            const selectMenuResponse = await interaction.reply({
+                components: [new ActionRowBuilder().addComponents(selectSystem)],
+                ephemeral: true
+            })
 
-        // Collector of responses for Select Menu's
-        const selectMenuCollector = selectMenuResponse.createMessageComponentCollector({ componentType: ComponentType.StringSelect, time: 60_000});
-        selectMenuCollector.on('collect', async i => {
-            // System selection response storage and sending of planet selection
-            if(i.customId === 'selectSystem') {
-                systemName = i.values[0];
-                await i.update({ components: [new ActionRowBuilder().addComponents(selectPlanet)], ephemeral: true });
+            // Collector of responses for Select Menu's
+            const selectMenuCollector = selectMenuResponse.createMessageComponentCollector({ componentType: ComponentType.StringSelect, time: 60_000});
+            selectMenuCollector.on('collect', async i => {
+                // System selection response storage and sending of planet selection
+                if(i.customId === 'selectSystem') {
+                    systemName = i.values[0];
+                    await i.update({ components: [new ActionRowBuilder().addComponents(selectPlanet)], ephemeral: true });
         
-            // Planet selection response storage and sending of ship size selection
-            } else if (i.customId === 'selectPlanet') {
-                nearestPlanet = i.values[0];
-                await i.update({ components: [new ActionRowBuilder().addComponents(selectShipSize)], ephemeral: true});
+                // Planet selection response storage and sending of ship size selection
+                } else if (i.customId === 'selectPlanet') {
+                    nearestPlanet = i.values[0];
+                    await i.update({ components: [new ActionRowBuilder().addComponents(selectShipSize)], ephemeral: true});
 
-            // Ship size storage and handling the issued thread
-            } else if (i.customId === 'selectShipSize') {
-                shipSize = i.values[0];
+                // Ship size storage and handling the issued thread
+                } else if (i.customId === 'selectShipSize') {
+                    shipSize = i.values[0];
 
-                const userChannel = await client.channels.fetch(config.userChannel);
-                const thread = await userChannel.threads.create({ name: `Request #${requestID}`, type: ChannelType.PrivateThread });
+                    const userChannel = await client.channels.fetch(config.userChannel);
+                    const thread = await userChannel.threads.create({ name: `Request #${requestID}`, type: ChannelType.PrivateThread });
 
-                const threadWelcomeMessage = await thread.send({ embeds: [generateThreadEmbed(requestID)], components: [new ActionRowBuilder().addComponents(threadCancelButton)]});
-                const buttonCollector = await threadWelcomeMessage.createMessageComponentCollector({ componentType: ComponentType.Button });
+                    const threadWelcomeMessage = await thread.send({ embeds: [generateThreadEmbed(requestID)], components: [new ActionRowBuilder().addComponents(threadCancelButton)]});
+                    const buttonCollector = await threadWelcomeMessage.createMessageComponentCollector({ componentType: ComponentType.Button });
 
-                await thread.members.add(i.user.id);
-                await i.update({ephemeral: true, embeds: [generateConfirmationEmbed(requestID, thread)], components: []});
+                    await thread.members.add(i.user.id);
+                    await i.update({ephemeral: true, embeds: [generateConfirmationEmbed(requestID, thread)], components: []});
 
-                buttonCollector.on('collect', async i => {
-                    if(i.customId === 'threadCancelButton') {
-                        thread.delete();
-                    }
-                })
-            }})
-        }
+                    buttonCollector.on('collect', async i => {
+                        if(i.customId === 'threadCancelButton') {
+                            thread.delete();
+                        }
+                    })
+                }})
+            }
 
         //const embed = generateAlertEmbed(requestID, systemName, nearestPlanet, requestStatus, clientUserName, shipSize, requestType);
     }
