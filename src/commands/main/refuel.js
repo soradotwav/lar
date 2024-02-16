@@ -17,6 +17,14 @@ function generateRandomID() {
 }
 
 /**
+ * Checks if the user of an interaction is an administrator or not.
+ * @returns {boolean} True or false depending on if the user has admin permissions.
+ */
+function isAdmin(i) {
+    return i.member.permissionsIn(i.channel).has("ADMINISTRATOR")
+  }
+
+/**
  * Reads and parses the configuration file.
  * @returns {Object|null} The parsed JSON object from the config file, or null if an error occurs.
  */
@@ -109,8 +117,15 @@ module.exports = {
         const clientDiscordUser = 'soradotwav';
         let shipSize;
 
-        // Select Menu for System
-        const selectSystem = new StringSelectMenuBuilder()
+        // Check for proper channel usage
+        if(interaction.channel.id != readConfigFile().userChannel && interaction.channel.id != readConfigFile().logisticsChannel && !isAdmin(interaction)) {
+            
+            const correctChannel = await client.channels.fetch(readConfigFile().userChannel);
+            interaction.reply({ephemeral: true, content: `You are not allowed to use this command in this channel. Please try again in ${correctChannel} or contact a system administrator.`});
+
+        } else {
+            // Select Menu for System
+            const selectSystem = new StringSelectMenuBuilder()
             .setCustomId('selectSystem')
             .setPlaceholder('Select your current system...')
             .addOptions(
@@ -144,7 +159,7 @@ module.exports = {
                         .setValue(object.label)
                 })
             );
-        
+    
         // Cancel Button that deletes current thread
         const threadCancelButton = new ButtonBuilder()
                 .setCustomId('threadCancelButton')
@@ -165,7 +180,7 @@ module.exports = {
             if(i.customId === 'selectSystem') {
                 systemName = i.values[0];
                 await i.update({ components: [new ActionRowBuilder().addComponents(selectPlanet)], ephemeral: true });
-            
+        
             // Planet selection response storage and sending of ship size selection
             } else if (i.customId === 'selectPlanet') {
                 nearestPlanet = i.values[0];
@@ -189,8 +204,8 @@ module.exports = {
                         thread.delete();
                     }
                 })
-            }
-        })
+            }})
+        }
 
         //const embed = generateAlertEmbed(requestID, systemName, nearestPlanet, requestStatus, clientUserName, shipSize);
     }
