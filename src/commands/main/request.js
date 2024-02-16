@@ -1,4 +1,6 @@
 const { SlashCommandBuilder, ActionRowBuilder, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, EmbedBuilder, ButtonBuilder, ButtonStyle, ComponentType, ChannelType } = require('discord.js');
+const fs = require('fs');
+const path = require('path');
 
 const serviceType = [
     {
@@ -87,8 +89,12 @@ async function sendModal(interaction,
                         nearestPlanet, 
                         requestID) {
 
+    const configPath = path.resolve(__dirname, '../../config.json');
+    const configFileContent = fs.readFileSync(configPath, 'utf8');
+    const configFile = JSON.parse(configFileContent);
+                        
     const client = interaction.client;
-    const alertChannel = await client.channels.fetch('1207519269919916083');
+    const alertChannel = await client.channels.fetch(configFile.alertChannel);
 
     let embed = new EmbedBuilder()
         .setAuthor({
@@ -142,50 +148,17 @@ async function sendModal(interaction,
             text: "L.A.R. 2024",
         })
         .setTimestamp();
-
-    const buttonRow = new ActionRowBuilder()
-        .addComponents(
-            new ButtonBuilder()
-                .setCustomId('respond-button')
-                .setLabel('Respond')
-                .setStyle(ButtonStyle.Success)
-        );
     
     const buttonSelect = await alertChannel.send({
         embeds: [embed],
-        components: [buttonRow]
     });
-
-    const buttonCollector = buttonSelect.createMessageComponentCollector({
-        componentType: ComponentType.Button,
-    })
-
-    buttonCollector.on('collect', async (collected) => {
-        const objIndex = embed.data.fields.findIndex(obj => obj.name === 'Team');
-        if(objIndex !== -1) {
-            embed.data.fields[objIndex].value = (parseInt(embed.data.fields[objIndex].value) + 1) + embed.data.fields[objIndex].value.slice(embed.data.fields[objIndex].value.indexOf('/'));
-        }
-
-        const thread = await alertChannel.threads.create({
-            name: `Request #${requestID}`,
-            reason: 'Test reason',
-            type: ChannelType.PrivateThread,
-        });
-
-        thread.members.add(interaction.user);
-
-        buttonSelect.edit({ embeds: [embed] });
-        collected.reply({
-            ephemeral: true,
-            content: `Sucessfully responded to the request. \nView ${thread} for information about the request and to talk to the client.`
-        });
-    })
 }
 
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('request')
         .setDescription('Calls an active resupply to your current location.')
+        .setDMPermission(false)
         .addStringOption(option =>
             option.setName('rsi-handle')
                 .setDescription('Your in-game name in Star Citizen.')
