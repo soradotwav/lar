@@ -1,12 +1,24 @@
 const { SlashCommandBuilder, EmbedBuilder, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, ComponentType } = require('discord.js');
-const selectables = require('../../resources/selectables.json');
 const { ActionRowBuilder } = require('@discordjs/builders');
+const fs = require('fs');
+const selectables = require('../../resources/selectables.json');
+const path = require('path');
 
 function generateRandomID() {
     const min = 1000000000;
     const max = 9999999999;
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
+
+function readConfigFile() {
+    try {
+      const rawdata = fs.readFileSync(path.resolve(__dirname, '../../config.json'));
+      return JSON.parse(rawdata);
+    } catch (error) {
+      console.error('Error reading config file:', error);
+      return null;
+    }
+  }
 
 function generateAlertEmbed(requestID, systemName, nearestPlanet, requestStatus, clientUserName, shipSize) {
     return new EmbedBuilder()
@@ -45,6 +57,9 @@ module.exports = {
         .setDMPermission(false),
     
     async execute(interaction) {
+
+        const config = readConfigFile();
+        console.log(client);
 
         const requestID = generateRandomID();
         let systemName;
