@@ -1,4 +1,6 @@
-const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, ComponentType } = require('discord.js');
+const selectables = require('../../resources/selectables.json');
+const { ActionRowBuilder } = require('@discordjs/builders');
 
 function generateRandomID() {
     const min = 1000000000;
@@ -6,7 +8,7 @@ function generateRandomID() {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-function generateEmbed(requestID, systemName, nearestPlanet, requestStatus, clientUserName, clientShip) {
+function generateAlertEmbed(requestID, systemName, nearestPlanet, requestStatus, clientUserName, shipSize) {
     return new EmbedBuilder()
         .setAuthor({ name: 'Logistics Active Resupply' })
         .setDescription(`Refuel Request #${requestID}`)
@@ -15,7 +17,7 @@ function generateEmbed(requestID, systemName, nearestPlanet, requestStatus, clie
             { name: 'Nearest Planet', value: `${nearestPlanet}`, inline: true },
             { name: 'Status', value: `${requestStatus}`, inline: true },
             { name: 'Client', value: `${clientUserName}`, inline: true },
-            { name: 'Client Ship', value: `${clientShip}`, inline: true},
+            { name: 'Ship Size', value: `${shipSize}`, inline: true},
             { name: 'Thread', value: `asd`, inline: false },
             { name: 'Request being handled by', value: `N/A`, inline: false })
         .setThumbnail('https://cdn.discordapp.com/avatars/1207431210528411668/69ef505a61c1fb847f56aa83b7042421?size=1024')
@@ -23,6 +25,18 @@ function generateEmbed(requestID, systemName, nearestPlanet, requestStatus, clie
         .setFooter({text: 'L.A.R. 2024'})
         .setTimestamp();
 }
+
+function generateConfirmationEmbed(requestID, openedThread) {
+    return new EmbedBuilder()
+        .setAuthor({ name: 'Logistics Active Resupply'})
+        .setTitle(`Refuel Request #${requestID}`)
+        .setDescription('Your refuel request has been received and will be handled by a member of the logistics team very soon. \n\nPlease visit the thread below or under this channel on your left to discuss further details with your logistics contact to expedite your location and subsequent refueling.')
+        .addFields({ name: 'Thread', value: openedThread, inline: false})
+        .setThumbnail('https://cdn.discordapp.com/avatars/1207431210528411668/69ef505a61c1fb847f56aa83b7042421?size=1024')
+        .setColor('#9b0002')
+        .setFooter({text: 'L.A.R. 2024'})
+        .setTimestamp();
+}       
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -33,14 +47,71 @@ module.exports = {
     async execute(interaction) {
 
         const requestID = generateRandomID();
-        const systemName = 'Stanton';
-        const nearestPlanet = 'MicroTech';
+        let systemName;
+        let nearestPlanet;
         const requestStatus = 'Open';
-        const clientUserName = 'soradotwav';
-        const clientShip = 'Spirit C1';
+        const clientDiscordUser = 'soradotwav';
+        let shipSize;
 
-        const embed = 
+        const selectSystem = new StringSelectMenuBuilder()
+            .setCustomId('selectSystem')
+            .setPlaceholder('Select your current system...')
+            .addOptions(
+                selectables.starSystems.map(object => {
+                    return new StringSelectMenuOptionBuilder()
+                        .setLabel(object.label)
+                        .setValue(object.label)
+                })
+            );
 
-        await interaction.reply({embeds: [embed]});
+        const selectPlanet = new StringSelectMenuBuilder()
+            .setCustomId('selectPlanet')
+            .setPlaceholder('Select the nearest planet to you...')
+            .addOptions(
+                selectables.stantonLocations.map(object => {
+                    return new StringSelectMenuOptionBuilder()
+                        .setLabel(object.label)
+                        .setValue(object.label)
+                })
+            );
+
+        const selectShipSize = new StringSelectMenuBuilder()
+            .setCustomId('selectShipSize')
+            .setPlaceholder('Select the size of your ship...')
+            .addOptions(
+                selectables.shipSize.map(object => {
+                    return new StringSelectMenuOptionBuilder()
+                        .setLabel(object.label)
+                        .setValue(object.label)
+                })
+            );
+
+
+        const response = await interaction.reply({
+            components: [new ActionRowBuilder().addComponents(selectSystem)],
+            ephemeral: true
+        })
+
+        const collector = response.createMessageComponentCollector({ componentType: ComponentType.StringSelect, time: 60_000});
+
+        collector.on('collect', async i => {
+            if(i.customId === 'selectSystem') {
+                systemName = i.values[0];
+
+                await i.update({ components: [new ActionRowBuilder().addComponents(selectPlanet)], ephemeral: true });
+
+            } else if (i.customId === 'selectPlanet') {
+                nearestPlanet = i.values[0];
+                await i.update({ components: [new ActionRowBuilder().addComponents(selectShipSize)], ephemeral: true});
+
+            } else if (i.customId === 'selectShipSize') {
+                shipSize = i.values[0];
+                await i.update({ephemeral: true, embeds: [generateConfirmationEmbed(requestID, 'tempthread')], components: []});
+            }
+        })
+        
+
+        //const embed = generateAlertEmbed(requestID, systemName, nearestPlanet, requestStatus, clientUserName, shipSize);
+        //await interaction.followUp({embeds: [embed]});
     }
 }

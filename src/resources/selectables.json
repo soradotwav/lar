@@ -50,5 +50,23 @@
             "label": "ArcCorp",
             "value": "ArcCorp"
         }
+    ],
+
+    "shipSize": [
+        {
+            "label": "Snub"
+        },
+        {
+            "label": "Small"
+        },
+        {
+            "label": "Medium"
+        },
+        {
+            "label": "Large"
+        },
+        {
+            "label": "Capital"
+        }
     ]
 }
