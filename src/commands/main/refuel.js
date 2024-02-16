@@ -5,8 +5,8 @@ const selectables = require('../../resources/selectables.json');
 const path = require('path');
 
 function generateRandomID() {
-    const min = 1000000000;
-    const max = 9999999999;
+    const min = 1000000;
+    const max = 9999999;
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
@@ -43,7 +43,7 @@ function generateConfirmationEmbed(requestID, openedThread) {
         .setAuthor({ name: 'Logistics Active Resupply'})
         .setTitle(`Refuel Request #${requestID}`)
         .setDescription('Your refuel request has been received and will be handled by a member of the logistics team very soon. \n\nPlease visit the thread below or under this channel on your left to discuss further details with your logistics contact to expedite your location and subsequent refueling.')
-        .addFields({ name: 'Thread', value: openedThread, inline: false})
+        .addFields({ name: 'Thread', value: `${openedThread}`, inline: false})
         .setThumbnail('https://cdn.discordapp.com/avatars/1207431210528411668/69ef505a61c1fb847f56aa83b7042421?size=1024')
         .setColor('#9b0002')
         .setFooter({text: 'L.A.R. 2024'})
@@ -123,7 +123,7 @@ module.exports = {
                 const alertChannel = await client.channels.fetch(readConfigFile().alertChannel);
                 const thread = await alertChannel.threads.create({ name: `Request #${requestID}`, type: ChannelType.PrivateThread });
                 await thread.members.add(i.user.id);
-                await i.update({ephemeral: true, embeds: [generateConfirmationEmbed(requestID, thread.name)], components: []});
+                await i.update({ephemeral: true, embeds: [generateConfirmationEmbed(requestID, thread)], components: []});
             }
         })
         
