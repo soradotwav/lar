@@ -27,13 +27,25 @@ module.exports = {
         .setDMPermission(false)
         .setDefaultMemberPermissions(PermissionsBitField.Flags.Administrator)
         
-        // Set Channel Subcommand
+        // Set User Channel Subcommand
         .addSubcommand(subcommand => 
-            subcommand.setName('channel')
-                .setDescription('Set the channel where the alerts will be shown.')
+            subcommand.setName('userchannel')
+                .setDescription('Set the channel where users are able to create alerts.')
                 .addChannelOption(option => 
-                    option.setName('channel')
-                        .setDescription('Select a channel for the alerts...')
+                    option.setName('userchannel')
+                        .setDescription('Select a channel...')
+                        .addChannelTypes(ChannelType.GuildText)
+                        .setRequired(true)
+                )
+        )
+
+        // Set Logistics Channel Subcommand
+        .addSubcommand(subcommand => 
+            subcommand.setName('logichannel')
+                .setDescription('Set the channel where the alerts will be shown to logistics.')
+                .addChannelOption(option => 
+                    option.setName('logichannel')
+                        .setDescription('Select a channel...')
                         .addChannelTypes(ChannelType.GuildText)
                         .setRequired(true)
                 )
@@ -52,14 +64,23 @@ module.exports = {
     async execute(interaction) {
 
         // Set channel logic
-        if(interaction.options.getSubcommand() === 'channel') {
+        if(interaction.options.getSubcommand() === 'userchannel') {
             const userSelection = interaction.options._hoistedOptions[0];
-            writeToConfig('alertChannel', userSelection.value);
+            writeToConfig('userChannel', userSelection.value);
 
             interaction.reply({
                 ephemeral: true,
-                content: `Alert channel was set to ${userSelection.channel}.`
-            })
+                content: `User channel was set to ${userSelection.channel}.`
+            });
+
+        } else if (interaction.options.getSubcommand() === 'logichannel') {
+            const userSelection = interaction.options._hoistedOptions[0];
+            writeToConfig('logisticsChannel', userSelection.value);
+
+            interaction.reply({
+                ephemeral: true,
+                content: `Logistics channel was set to ${userSelection.channel}.`
+            });
 
         } else if (interaction.options.getSubcommand() === 'role') {
             const userSelection = interaction.options._hoistedOptions[0];
@@ -68,7 +89,7 @@ module.exports = {
             interaction.reply({
                 ephemeral: true,
                 content: `Logistics role was set to ${userSelection.role}.`
-            })
+            });
         }
     }
 };

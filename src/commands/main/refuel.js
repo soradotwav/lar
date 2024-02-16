@@ -175,8 +175,8 @@ module.exports = {
             } else if (i.customId === 'selectShipSize') {
                 shipSize = i.values[0];
 
-                const alertChannel = await client.channels.fetch(readConfigFile().alertChannel);
-                const thread = await alertChannel.threads.create({ name: `Request #${requestID}`, type: ChannelType.PrivateThread });
+                const userChannel = await client.channels.fetch(readConfigFile().userChannel);
+                const thread = await userChannel.threads.create({ name: `Request #${requestID}`, type: ChannelType.PrivateThread });
 
                 const threadWelcomeMessage = await thread.send({ embeds: [generateThreadEmbed(requestID)], components: [new ActionRowBuilder().addComponents(threadCancelButton)]});
                 const buttonCollector = await threadWelcomeMessage.createMessageComponentCollector({ componentType: ComponentType.Button });
