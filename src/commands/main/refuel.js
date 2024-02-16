@@ -6,7 +6,7 @@ function generateRandomID() {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-function generateEmbed() {
+function generateEmbed(requestID, systemName, nearestPlanet, requestStatus, clientUserName, clientShip) {
     return new EmbedBuilder()
         .setAuthor({ name: 'Logistics Active Resupply' })
         .setDescription(`Refuel Request #${requestID}`)
