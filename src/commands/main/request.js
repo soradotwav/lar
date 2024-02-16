@@ -1,59 +1,7 @@
 const { SlashCommandBuilder, ActionRowBuilder, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, EmbedBuilder, ButtonBuilder, ButtonStyle, ComponentType, ChannelType } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
-
-const serviceType = [
-    {
-        label: 'Ammo',
-        value: 'Ammo',
-    },
-    {
-        label: 'Armor',
-        value: 'Armor',
-    },
-    {
-        label: 'Medical',
-        value: 'Medical',
-    },
-    {
-        label: 'Vehicle',
-        value: 'Vehicle',
-    },
-    {
-        label: 'Weapon',
-        value: 'Weapon',
-    },
-]
-
-const starSystems = [
-    {
-        label: 'Stanton',
-        value: 'Stanton'
-    },
-    {
-        label: 'Pyro',
-        value: 'Pyro'
-    },
-]
-
-const stantonLocations = [
-    {
-        label: 'Orison',
-        value: 'Orison'
-    },
-    {
-        label: 'Hurston',
-        value: 'Hurston'
-    },
-    {
-        label: 'MicroTech',
-        value: 'MicroTech'
-    },
-    {
-        label: 'ArcCorp',
-        value: 'ArcCorp'
-    },
-]
+const selectables = require('../../resources/selectables.json');
 
 function wait(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -168,7 +116,7 @@ module.exports = {
         const response = await interaction.reply({
             content: 'What resupply survices do you require?',
             ephemeral: true,
-            components: [createSelector('service-selector', serviceType, true)],
+            components: [createSelector('service-selector', selectables.serviceType, true)],
         });
 
         const ingameName = interaction.options.getString('rsi-handle');

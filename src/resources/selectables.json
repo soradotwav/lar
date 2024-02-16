@@ -1,0 +1,54 @@
+{
+    "serviceType": [
+        {
+            "label": "Ammo",
+            "value": "Ammo"
+        },
+        {
+            "label": "Armor",
+            "value": "Armor"
+        },
+        {
+            "label": "Medical",
+            "value": "Medical"
+        },
+        {
+            "label": "Vehicle",
+            "value": "Vehicle"
+        },
+        {
+            "label": "Weapon",
+            "value": "Weapon"
+        }
+    ],
+
+    "starSystems": [
+        {
+            "label": "Stanton",
+            "value": "Stanton"
+        },
+        {
+            "label": "Pyro",
+            "value": "Pyro"
+        }
+    ],
+    
+    "stantonLocations": [
+        {
+            "label": "Orison",
+            "value": "Orison"
+        },
+        {
+            "label": "Hurston",
+            "value": "Hurston"
+        },
+        {
+            "label": "MicroTech",
+            "value": "MicroTech"
+        },
+        {
+            "label": "ArcCorp",
+            "value": "ArcCorp"
+        }
+    ]
+}
