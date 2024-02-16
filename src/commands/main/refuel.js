@@ -168,10 +168,20 @@ module.exports = {
                 .setLabel('Cancel')
                 .setStyle(ButtonStyle.Danger);
 
+            const abortButton = new ButtonBuilder()
+                .setCustomId('abortButton')
+                .setLabel('Abort')
+                .setStyle(ButtonStyle.Danger);
+
             const respondButton = new ButtonBuilder()
                 .setCustomId('respondButton')
                 .setLabel('Respond')
                 .setStyle(ButtonStyle.Success);
+
+            const completeButton = new ButtonBuilder()
+                    .setCustomId('completeButton')
+                    .setLabel('Complete')
+                    .setStyle(ButtonStyle.Success);
 
             // Response to initial command
             const selectMenuResponse = await interaction.reply({
@@ -218,8 +228,21 @@ module.exports = {
 
                     alertRespondButtonCollector.on('collect', async i => {
                         if (i.customId === 'respondButton') {
-                            //await thread.members.add(i.user.id);
-                            await i.reply({ ephemeral: true, content: `You have succesfully replied to the request and have been added to ${thread}.`});
+                            
+                            if(!thread.members.fetch(i.user.id)) { //REMOVE ! WHEN DONE TESTING
+                                i.reply({ ephemeral: true, content: 'You are already in this thread!'});
+
+                            } else {
+                                await thread.members.add(i.user.id);
+                                await i.reply({ ephemeral: true, content: `You have succesfully replied to the request and have been added to ${thread}.`});
+                                alertMessage.edit({embeds: alertMessage.embeds, components: [new ActionRowBuilder().addComponents([abortButton, completeButton])]});
+                            } 
+                        } else if (i.customId === 'abortButton') {
+                            thread.delete();
+                            alertMessage.delete(); // For now original alert gets deleted, later most likely archive it in some way
+                        } else if (i.customId === 'completeButton') {
+                            thread.delete();
+                            alertMessage.delete(); // For now original alert gets deleted, later most likely archive it in some way
                         }
                     })
                 }})
