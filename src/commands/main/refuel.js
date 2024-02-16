@@ -168,6 +168,10 @@ module.exports = {
                 .setLabel('Cancel')
                 .setStyle(ButtonStyle.Danger);
 
+            const respondButton = new ButtonBuilder()
+                .setCustomId('respondButton')
+                .setLabel('Respond')
+                .setStyle(ButtonStyle.Success);
 
             // Response to initial command
             const selectMenuResponse = await interaction.reply({
@@ -196,17 +200,26 @@ module.exports = {
                     const thread = await userChannel.threads.create({ name: `Request #${requestID}`, type: ChannelType.PrivateThread });
 
                     const threadWelcomeMessage = await thread.send({ embeds: [generateThreadEmbed(requestID)], components: [new ActionRowBuilder().addComponents(threadCancelButton)]});
-                    const buttonCollector = await threadWelcomeMessage.createMessageComponentCollector({ componentType: ComponentType.Button });
+                    const threadDeleteButtonCollector = await threadWelcomeMessage.createMessageComponentCollector({ componentType: ComponentType.Button });
 
                     await thread.members.add(i.user.id);
                     await i.update({ephemeral: true, embeds: [generateConfirmationEmbed(requestID, thread)], components: []});
 
                     const logisticsChannel = await client.channels.fetch(config.logisticsChannel);
-                    const alertMessage = await logisticsChannel.send({ embeds: [generateAlertEmbed(requestID, systemName, nearestPlanet, 'Open', i.user, shipSize, 'Refuel')], components: [new ActionRowBuilder().addComponents()]})
+                    const alertMessage = await logisticsChannel.send({ embeds: [generateAlertEmbed(requestID, systemName, nearestPlanet, 'Open', i.user, shipSize, 'Refuel')], components: [new ActionRowBuilder().addComponents(respondButton)]});
+                    const alertRespondButtonCollector = await alertMessage.createMessageComponentCollector({componentType: ComponentType.Button});
 
-                    buttonCollector.on('collect', async i => {
+                    threadDeleteButtonCollector.on('collect', async i => {
                         if(i.customId === 'threadCancelButton') {
                             thread.delete();
+                            alertMessage.delete(); // For now original alert gets deleted, later most likely archive it in some way
+                        }
+                    })
+
+                    alertRespondButtonCollector.on('collect', async i => {
+                        if (i.customId === 'respondButton') {
+                            //await thread.members.add(i.user.id);
+                            await i.reply({ ephemeral: true, content: `You have succesfully replied to the request and have been added to ${thread}.`});
                         }
                     })
                 }})
