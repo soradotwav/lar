@@ -1,8 +1,10 @@
-const { SlashCommandBuilder, EmbedBuilder, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, ComponentType, ChannelType } = require('discord.js');
-const { ActionRowBuilder } = require('@discordjs/builders');
+const { SlashCommandBuilder, EmbedBuilder, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, ComponentType, ChannelType, ButtonStyle } = require('discord.js');
+const { ActionRowBuilder, ButtonBuilder } = require('@discordjs/builders');
 const fs = require('fs');
 const selectables = require('../../resources/selectables.json');
 const path = require('path');
+
+const loreYear = new Date().getFullYear() + 930;
 
 function generateRandomID() {
     const min = 1000000;
@@ -34,7 +36,7 @@ function generateAlertEmbed(requestID, systemName, nearestPlanet, requestStatus,
             { name: 'Request being handled by', value: `N/A`, inline: false })
         .setThumbnail('https://cdn.discordapp.com/avatars/1207431210528411668/69ef505a61c1fb847f56aa83b7042421?size=1024')
         .setColor('#9b0002')
-        .setFooter({text: 'L.A.R. 2024'})
+        .setFooter({text: `L.A.R. ${loreYear}`})
         .setTimestamp();
 }
 
@@ -46,9 +48,20 @@ function generateConfirmationEmbed(requestID, openedThread) {
         .addFields({ name: 'Thread', value: `${openedThread}`, inline: false})
         .setThumbnail('https://cdn.discordapp.com/avatars/1207431210528411668/69ef505a61c1fb847f56aa83b7042421?size=1024')
         .setColor('#9b0002')
-        .setFooter({text: 'L.A.R. 2024'})
+        .setFooter({text: `L.A.R. ${loreYear}`})
         .setTimestamp();
-}       
+}  
+
+function generateThreadEmbed(requestID) {
+    return new EmbedBuilder()
+        .setAuthor({ name: 'Logistics Active Resupply'})
+        .setTitle(`Refuel Request ${requestID}`)
+        .setDescription(`Thank you for choosing Logistics Active Resupply as your quick refueling service. \n\nA member of the logistics team will very soon join this thread and discuss all needed details to be able to head to your location and get you fueled back up and flying in the verse again in no time.\n\nIf, for whichever reason, you'd like to close this thread and cancel the request, simply press the button below. Thank you for your patience, and again, thank you for choosing L.A.R.`)
+        .setThumbnail('https://cdn.discordapp.com/avatars/1207431210528411668/69ef505a61c1fb847f56aa83b7042421?size=1024')
+        .setColor('#9b0002')
+        .setFooter({text: `L.A.R. ${loreYear}`})
+        .setTimestamp();
+}
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -99,15 +112,20 @@ module.exports = {
                 })
             );
 
+        const clientCancelButton = new ButtonBuilder()
+                .setCustomId('clientCancelButton')
+                .setLabel('Cancel')
+                .setStyle(ButtonStyle.Danger);
 
-        const response = await interaction.reply({
+
+        const selectMenuResponse = await interaction.reply({
             components: [new ActionRowBuilder().addComponents(selectSystem)],
             ephemeral: true
         })
 
-        const collector = response.createMessageComponentCollector({ componentType: ComponentType.StringSelect, time: 60_000});
+        const selectMenuCollector = selectMenuResponse.createMessageComponentCollector({ componentType: ComponentType.StringSelect, time: 60_000});
 
-        collector.on('collect', async i => {
+        selectMenuCollector.on('collect', async i => {
             if(i.customId === 'selectSystem') {
                 systemName = i.values[0];
 
@@ -122,13 +140,21 @@ module.exports = {
 
                 const alertChannel = await client.channels.fetch(readConfigFile().alertChannel);
                 const thread = await alertChannel.threads.create({ name: `Request #${requestID}`, type: ChannelType.PrivateThread });
+
+                const threadWelcomeMessage = await thread.send({ embeds: [generateThreadEmbed(requestID)], components: [new ActionRowBuilder().addComponents(clientCancelButton)]});
+                const buttonCollector = await threadWelcomeMessage.createMessageComponentCollector({ componentType: ComponentType.Button });
+
                 await thread.members.add(i.user.id);
                 await i.update({ephemeral: true, embeds: [generateConfirmationEmbed(requestID, thread)], components: []});
+
+                buttonCollector.on('collect', async i => {
+                    if(i.customId === 'clientCancelButton') {
+                        thread.delete();
+                    }
+                })
             }
         })
-        
 
         //const embed = generateAlertEmbed(requestID, systemName, nearestPlanet, requestStatus, clientUserName, shipSize);
-        //await interaction.followUp({embeds: [embed]});
     }
 }
