@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, EmbedBuilder, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, ComponentType } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, ComponentType, ChannelType } = require('discord.js');
 const { ActionRowBuilder } = require('@discordjs/builders');
 const fs = require('fs');
 const selectables = require('../../resources/selectables.json');
@@ -57,9 +57,7 @@ module.exports = {
         .setDMPermission(false),
     
     async execute(interaction) {
-
-        const config = readConfigFile();
-        console.log(client);
+        const client = interaction.client;
 
         const requestID = generateRandomID();
         let systemName;
@@ -121,7 +119,11 @@ module.exports = {
 
             } else if (i.customId === 'selectShipSize') {
                 shipSize = i.values[0];
-                await i.update({ephemeral: true, embeds: [generateConfirmationEmbed(requestID, 'tempthread')], components: []});
+
+                const alertChannel = await client.channels.fetch(readConfigFile().alertChannel);
+                const thread = await alertChannel.threads.create({ name: `Request #${requestID}`, type: ChannelType.PrivateThread });
+                await thread.members.add(i.user.id);
+                await i.update({ephemeral: true, embeds: [generateConfirmationEmbed(requestID, thread.name)], components: []});
             }
         })
         
