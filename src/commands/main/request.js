@@ -1,27 +1,61 @@
-const { SlashCommandBuilder, ActionRowBuilder, StringSelectMenuBuilder, StringSelectMenuOptionBuilder } = require('discord.js');
+const { SlashCommandBuilder, ActionRowBuilder, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, EmbedBuilder } = require('discord.js');
 
 const serviceType = [
     {
         label: 'Ammo',
-        value: 'ammo',
+        value: 'Ammo',
     },
     {
         label: 'Armor',
-        value: 'armor',
+        value: 'Armor',
     },
     {
         label: 'Medical',
-        value: 'medical',
+        value: 'Medical',
     },
     {
         label: 'Vehicle',
-        value: 'vehicle',
+        value: 'Vehicle',
     },
     {
         label: 'Weapon',
-        value: 'weapon',
+        value: 'Weapon',
     },
 ]
+
+const starSystems = [
+    {
+        label: 'Stanton',
+        value: 'Stanton'
+    },
+    {
+        label: 'Pyro',
+        value: 'Pyro'
+    },
+]
+
+const stantonLocations = [
+    {
+        label: 'Orison',
+        value: 'Orison'
+    },
+    {
+        label: 'Hurston',
+        value: 'Hurston'
+    },
+    {
+        label: 'MicroTech',
+        value: 'MicroTech'
+    },
+    {
+        label: 'ArcCorp',
+        value: 'ArcCorp'
+    },
+]
+
+function wait(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }  
 
 function createSelector(id, array, multi) {
     const options = array.map(item => {
@@ -34,7 +68,6 @@ function createSelector(id, array, multi) {
         return new ActionRowBuilder()
             .addComponents(new StringSelectMenuBuilder()
                 .setCustomId(id)
-                .setMinValues(1)
                 .setMaxValues(array.length)
                 .setPlaceholder('Select an option...')
                 .addOptions(options));
@@ -42,10 +75,76 @@ function createSelector(id, array, multi) {
         return new ActionRowBuilder()
             .addComponents(new StringSelectMenuBuilder()
                 .setCustomId(id)
-                .setMinValues(1)
                 .setPlaceholder('Select an option...')
                 .addOptions(options));
     }
+}
+
+async function sendModal(interaction, 
+                        clientUserName, 
+                        orderedService, 
+                        systemName, 
+                        nearestPlanet, 
+                        rushOrderStatus, 
+                        requestID) {
+
+    const client = interaction.client;
+    const logisticsChannel = await client.channels.fetch('1207519269919916083');
+
+    const embed = new EmbedBuilder()
+        .setAuthor({
+            name: `Logistics Active Resupply #${requestID}`,
+        })
+        .addFields(
+        {
+            name: "System",
+            value: `${systemName}`,
+            inline: true
+        },
+        {
+            name: "Nearest Planet",
+            value: `${nearestPlanet}`,
+            inline: true
+        },
+        {
+            name: "Service",
+            value: `${orderedService.join('\n')}`,
+            inline: true
+        },
+        {
+            name: "Client",
+            value: `${clientUserName}`,
+            inline: true
+        },
+        {
+            name: "Team",
+            value: "asd",
+            inline: true
+          },
+          {
+            name: "Status",
+            value: "asd",
+            inline: true
+          },
+          {
+            name: "Thread",
+            value: "asd",
+            inline: false
+          },
+          {
+            name: "Team Lead",
+            value: "asd",
+            inline: false
+          },
+    )
+        .setThumbnail("https://cdn.discordapp.com/avatars/1207431210528411668/69ef505a61c1fb847f56aa83b7042421?size=1024")
+        .setColor("#9b0002")
+        .setFooter({
+            text: "L.A.R. 2024",
+        })
+        .setTimestamp();
+    
+    await logisticsChannel.send({embeds: [embed]});
 }
 
 module.exports = {
@@ -57,6 +156,7 @@ module.exports = {
                 .setDescription('Your in-game name in Star Citizen.')
                 .setRequired(true)),
     async execute(interaction) {
+
         const response = await interaction.reply({
             content: 'What resupply survices do you require?',
             ephemeral: true,
@@ -68,17 +168,23 @@ module.exports = {
 
         const collectorFilter = i => i.user.id === interaction.user.id;
 
+        let confirmation;
+
         try {
-            const confirmation = await response.awaitMessageComponent({ filter: collectorFilter, time: 60_000 });
-        
-            await interaction.editReply({
-                content: confirmation.values.join(', '),
-                components: [],
-            });
+            confirmation = await response.awaitMessageComponent({ filter: collectorFilter, time: 60_000 });
+            console.log(confirmation.values);
 
         } catch (e) {
             console.log(e);
             await interaction.editReply({ content: 'Confirmation not received within 1 minute, cancelling', components: [] });
         }
+
+        const requestID = Math.floor(Math.random() * (9999999 - 1000000 + 1)) + 1000000;
+        sendModal(interaction, discordUser, confirmation.values, 'Stanton', 'MicroTech', 'True', requestID);
+        console.log(requestID);
+        await interaction.editReply({
+            content: `${confirmation.values.join(', ')}\nWhat is your current location?`,
+            components: [],
+        });
     }
 };
