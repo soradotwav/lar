@@ -59,7 +59,6 @@ function generateAlertEmbed(requestID, systemName, nearestPlanet, requestStatus,
             { name: 'Client', value: `${clientUserName}`, inline: true },
             { name: 'Ship Size', value: `${shipSize}`, inline: true},
             { name: 'Request Type', value: `${requestType}`, inline: true},
-            { name: 'Thread', value: `asd`, inline: false },
             { name: 'Request being handled by', value: `N/A`, inline: false })
         .setThumbnail('https://cdn.discordapp.com/avatars/1207431210528411668/69ef505a61c1fb847f56aa83b7042421?size=1024')
         .setColor('#9b0002')
@@ -201,6 +200,9 @@ module.exports = {
 
                     await thread.members.add(i.user.id);
                     await i.update({ephemeral: true, embeds: [generateConfirmationEmbed(requestID, thread)], components: []});
+
+                    const logisticsChannel = await client.channels.fetch(config.logisticsChannel);
+                    const alertMessage = await logisticsChannel.send({ embeds: [generateAlertEmbed(requestID, systemName, nearestPlanet, 'Open', i.user, shipSize, 'Refuel')], components: [new ActionRowBuilder().addComponents()]})
 
                     buttonCollector.on('collect', async i => {
                         if(i.customId === 'threadCancelButton') {
