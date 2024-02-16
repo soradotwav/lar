@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, ActionRowBuilder, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, EmbedBuilder } = require('discord.js');
+const { SlashCommandBuilder, ActionRowBuilder, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, EmbedBuilder, ButtonBuilder, ButtonStyle, ComponentType, ChannelType } = require('discord.js');
 
 const serviceType = [
     {
@@ -85,13 +85,12 @@ async function sendModal(interaction,
                         orderedService, 
                         systemName, 
                         nearestPlanet, 
-                        rushOrderStatus, 
                         requestID) {
 
     const client = interaction.client;
-    const logisticsChannel = await client.channels.fetch('1207519269919916083');
+    const alertChannel = await client.channels.fetch('1207519269919916083');
 
-    const embed = new EmbedBuilder()
+    let embed = new EmbedBuilder()
         .setAuthor({
             name: `Logistics Active Resupply #${requestID}`,
         })
@@ -118,24 +117,24 @@ async function sendModal(interaction,
         },
         {
             name: "Team",
-            value: "asd",
+            value: `0/6`,
             inline: true
-          },
-          {
+        },
+        {
             name: "Status",
             value: "asd",
             inline: true
-          },
-          {
+        },
+        {
             name: "Thread",
             value: "asd",
             inline: false
-          },
-          {
+        },
+        {
             name: "Team Lead",
             value: "asd",
             inline: false
-          },
+        },
     )
         .setThumbnail("https://cdn.discordapp.com/avatars/1207431210528411668/69ef505a61c1fb847f56aa83b7042421?size=1024")
         .setColor("#9b0002")
@@ -143,8 +142,44 @@ async function sendModal(interaction,
             text: "L.A.R. 2024",
         })
         .setTimestamp();
+
+    const buttonRow = new ActionRowBuilder()
+        .addComponents(
+            new ButtonBuilder()
+                .setCustomId('respond-button')
+                .setLabel('Respond')
+                .setStyle(ButtonStyle.Success)
+        );
     
-    await logisticsChannel.send({embeds: [embed]});
+    const buttonSelect = await alertChannel.send({
+        embeds: [embed],
+        components: [buttonRow]
+    });
+
+    const buttonCollector = buttonSelect.createMessageComponentCollector({
+        componentType: ComponentType.Button,
+    })
+
+    buttonCollector.on('collect', async (collected) => {
+        const objIndex = embed.data.fields.findIndex(obj => obj.name === 'Team');
+        if(objIndex !== -1) {
+            embed.data.fields[objIndex].value = (parseInt(embed.data.fields[objIndex].value) + 1) + embed.data.fields[objIndex].value.slice(embed.data.fields[objIndex].value.indexOf('/'));
+        }
+
+        const thread = await alertChannel.threads.create({
+            name: `Request #${requestID}`,
+            reason: 'Test reason',
+            type: ChannelType.PrivateThread,
+        });
+
+        thread.members.add(interaction.user);
+
+        buttonSelect.edit({ embeds: [embed] });
+        collected.reply({
+            ephemeral: true,
+            content: `Sucessfully responded to the request. \nView ${thread} for information about the request and to talk to the client.`
+        });
+    })
 }
 
 module.exports = {
@@ -172,19 +207,18 @@ module.exports = {
 
         try {
             confirmation = await response.awaitMessageComponent({ filter: collectorFilter, time: 60_000 });
-            console.log(confirmation.values);
 
         } catch (e) {
             console.log(e);
             await interaction.editReply({ content: 'Confirmation not received within 1 minute, cancelling', components: [] });
         }
 
-        const requestID = Math.floor(Math.random() * (9999999 - 1000000 + 1)) + 1000000;
-        sendModal(interaction, discordUser, confirmation.values, 'Stanton', 'MicroTech', 'True', requestID);
-        console.log(requestID);
         await interaction.editReply({
             content: `${confirmation.values.join(', ')}\nWhat is your current location?`,
             components: [],
         });
+
+        const requestID = Math.floor(Math.random() * (9999999 - 1000000 + 1)) + 1000000;
+        sendModal(interaction, discordUser, confirmation.values, 'Stanton', 'MicroTech', requestID);
     }
 };
