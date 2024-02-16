@@ -6,12 +6,20 @@ const path = require('path');
 
 const loreYear = new Date().getFullYear() + 930;
 
+/**
+ * Generates a random ID within a specified range.
+ * @returns {number} A random ID number between 1,000,000 and 9,999,999.
+ */
 function generateRandomID() {
     const min = 1000000;
     const max = 9999999;
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
+/**
+ * Reads and parses the configuration file.
+ * @returns {Object|null} The parsed JSON object from the config file, or null if an error occurs.
+ */
 function readConfigFile() {
     try {
       const rawdata = fs.readFileSync(path.resolve(__dirname, '../../config.json'));
@@ -22,6 +30,16 @@ function readConfigFile() {
     }
   }
 
+/**
+ * Creates an alert embed message for a refuel request.
+ * @param {string} requestID - The unique ID of the refuel request.
+ * @param {string} systemName - The name of the system where refueling is requested.
+ * @param {string} nearestPlanet - The nearest planet to the request location.
+ * @param {string} requestStatus - The current status of the refuel request.
+ * @param {string} clientUserName - The username of the client requesting refueling.
+ * @param {string} shipSize - The size category of the ship requiring refueling.
+ * @returns {EmbedBuilder} An EmbedBuilder object configured with the refuel request details.
+ */
 function generateAlertEmbed(requestID, systemName, nearestPlanet, requestStatus, clientUserName, shipSize) {
     return new EmbedBuilder()
         .setAuthor({ name: 'Logistics Active Resupply' })
@@ -40,6 +58,12 @@ function generateAlertEmbed(requestID, systemName, nearestPlanet, requestStatus,
         .setTimestamp();
 }
 
+/**
+ * Creates a confirmation embed message for a refuel request.
+ * @param {string} requestID - The unique ID of the refuel request.
+ * @param {ThreadChannel} openedThread - The thread channel opened for the refuel request.
+ * @returns {EmbedBuilder} An EmbedBuilder object configured for confirming the refuel request receipt.
+ */
 function generateConfirmationEmbed(requestID, openedThread) {
     return new EmbedBuilder()
         .setAuthor({ name: 'Logistics Active Resupply'})
@@ -52,6 +76,12 @@ function generateConfirmationEmbed(requestID, openedThread) {
         .setTimestamp();
 }  
 
+/**
+ * Creates a confirmation embed message for a refuel request.
+ * @param {string} requestID - The unique ID of the refuel request.
+ * @param {ThreadChannel} openedThread - The thread channel opened for the refuel request.
+ * @returns {EmbedBuilder} An EmbedBuilder object configured for confirming the refuel request receipt.
+ */
 function generateThreadEmbed(requestID) {
     return new EmbedBuilder()
         .setAuthor({ name: 'Logistics Active Resupply'})
@@ -64,6 +94,7 @@ function generateThreadEmbed(requestID) {
 }
 
 module.exports = {
+    // Specifies command
     data: new SlashCommandBuilder()
         .setName('refuel')
         .setDescription('Request a refueling operation to your current location.')
@@ -71,7 +102,6 @@ module.exports = {
     
     async execute(interaction) {
         const client = interaction.client;
-
         const requestID = generateRandomID();
         let systemName;
         let nearestPlanet;
@@ -79,6 +109,7 @@ module.exports = {
         const clientDiscordUser = 'soradotwav';
         let shipSize;
 
+        // Select Menu for System
         const selectSystem = new StringSelectMenuBuilder()
             .setCustomId('selectSystem')
             .setPlaceholder('Select your current system...')
@@ -90,6 +121,7 @@ module.exports = {
                 })
             );
 
+        // Select Menu for Nearest Planet
         const selectPlanet = new StringSelectMenuBuilder()
             .setCustomId('selectPlanet')
             .setPlaceholder('Select the nearest planet to you...')
@@ -101,6 +133,7 @@ module.exports = {
                 })
             );
 
+        // Select Menu for Ship Size
         const selectShipSize = new StringSelectMenuBuilder()
             .setCustomId('selectShipSize')
             .setPlaceholder('Select the size of your ship...')
@@ -111,44 +144,48 @@ module.exports = {
                         .setValue(object.label)
                 })
             );
-
-        const clientCancelButton = new ButtonBuilder()
-                .setCustomId('clientCancelButton')
+        
+        // Cancel Button that deletes current thread
+        const threadCancelButton = new ButtonBuilder()
+                .setCustomId('threadCancelButton')
                 .setLabel('Cancel')
                 .setStyle(ButtonStyle.Danger);
 
 
+        // Response to initial command
         const selectMenuResponse = await interaction.reply({
             components: [new ActionRowBuilder().addComponents(selectSystem)],
             ephemeral: true
         })
 
+        // Collector of responses for Select Menu's
         const selectMenuCollector = selectMenuResponse.createMessageComponentCollector({ componentType: ComponentType.StringSelect, time: 60_000});
-
         selectMenuCollector.on('collect', async i => {
+            // System selection response storage and sending of planet selection
             if(i.customId === 'selectSystem') {
                 systemName = i.values[0];
-
                 await i.update({ components: [new ActionRowBuilder().addComponents(selectPlanet)], ephemeral: true });
-
+            
+            // Planet selection response storage and sending of ship size selection
             } else if (i.customId === 'selectPlanet') {
                 nearestPlanet = i.values[0];
                 await i.update({ components: [new ActionRowBuilder().addComponents(selectShipSize)], ephemeral: true});
 
+            // Ship size storage and handling the issued thread
             } else if (i.customId === 'selectShipSize') {
                 shipSize = i.values[0];
 
                 const alertChannel = await client.channels.fetch(readConfigFile().alertChannel);
                 const thread = await alertChannel.threads.create({ name: `Request #${requestID}`, type: ChannelType.PrivateThread });
 
-                const threadWelcomeMessage = await thread.send({ embeds: [generateThreadEmbed(requestID)], components: [new ActionRowBuilder().addComponents(clientCancelButton)]});
+                const threadWelcomeMessage = await thread.send({ embeds: [generateThreadEmbed(requestID)], components: [new ActionRowBuilder().addComponents(threadCancelButton)]});
                 const buttonCollector = await threadWelcomeMessage.createMessageComponentCollector({ componentType: ComponentType.Button });
 
                 await thread.members.add(i.user.id);
                 await i.update({ephemeral: true, embeds: [generateConfirmationEmbed(requestID, thread)], components: []});
 
                 buttonCollector.on('collect', async i => {
-                    if(i.customId === 'clientCancelButton') {
+                    if(i.customId === 'threadCancelButton') {
                         thread.delete();
                     }
                 })
