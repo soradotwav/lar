@@ -48,7 +48,7 @@ function readConfigFile() {
  * @param {string} shipSize - The size category of the ship requiring refueling.
  * @returns {EmbedBuilder} An EmbedBuilder object configured with the refuel request details.
  */
-function generateAlertEmbed(requestID, systemName, nearestPlanet, requestStatus, clientUserName, shipSize) {
+function generateAlertEmbed(requestID, systemName, nearestPlanet, requestStatus, clientUserName, shipSize, requestType) {
     return new EmbedBuilder()
         .setAuthor({ name: 'Logistics Active Resupply' })
         .setDescription(`Refuel Request #${requestID}`)
@@ -58,6 +58,7 @@ function generateAlertEmbed(requestID, systemName, nearestPlanet, requestStatus,
             { name: 'Status', value: `${requestStatus}`, inline: true },
             { name: 'Client', value: `${clientUserName}`, inline: true },
             { name: 'Ship Size', value: `${shipSize}`, inline: true},
+            { name: 'Request Type', value: `${requestType}`, inline: true},
             { name: 'Thread', value: `asd`, inline: false },
             { name: 'Request being handled by', value: `N/A`, inline: false })
         .setThumbnail('https://cdn.discordapp.com/avatars/1207431210528411668/69ef505a61c1fb847f56aa83b7042421?size=1024')
@@ -209,6 +210,6 @@ module.exports = {
             }})
         }
 
-        //const embed = generateAlertEmbed(requestID, systemName, nearestPlanet, requestStatus, clientUserName, shipSize);
+        //const embed = generateAlertEmbed(requestID, systemName, nearestPlanet, requestStatus, clientUserName, shipSize, requestType);
     }
 }
