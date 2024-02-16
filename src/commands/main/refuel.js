@@ -117,10 +117,12 @@ module.exports = {
         const clientDiscordUser = 'soradotwav';
         let shipSize;
 
+        const config = readConfigFile();
+
         // Check for proper channel usage
-        if(interaction.channel.id != readConfigFile().userChannel && interaction.channel.id != readConfigFile().logisticsChannel && !isAdmin(interaction)) {
-            
-            const correctChannel = await client.channels.fetch(readConfigFile().userChannel);
+        if(interaction.channel.id != config.userChannel && interaction.channel.id != config.logisticsChannel && !isAdmin(interaction)) {
+
+            const correctChannel = await client.channels.fetch(config.userChannel);
             interaction.reply({ephemeral: true, content: `You are not allowed to use this command in this channel. Please try again in ${correctChannel} or contact a system administrator.`});
 
         } else {
@@ -190,7 +192,7 @@ module.exports = {
             } else if (i.customId === 'selectShipSize') {
                 shipSize = i.values[0];
 
-                const userChannel = await client.channels.fetch(readConfigFile().userChannel);
+                const userChannel = await client.channels.fetch(config.userChannel);
                 const thread = await userChannel.threads.create({ name: `Request #${requestID}`, type: ChannelType.PrivateThread });
 
                 const threadWelcomeMessage = await thread.send({ embeds: [generateThreadEmbed(requestID)], components: [new ActionRowBuilder().addComponents(threadCancelButton)]});
