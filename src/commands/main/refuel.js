@@ -243,25 +243,44 @@ module.exports = {
                         }
 
                         const responderUser = await i.guild.members.fetch(i.member.id);
+                        const allThreadMembers = await thread.members.fetch();
 
                         if(i.customId === 'respondButton') {
-                            thread.members.add(responderUser.user.id);
-                            i.reply({ ephemeral: true, content: `You have succesfully replied to the request and have been added to ${thread}.`});
 
-                            alertMessage.edit({embeds: [generateAlertEmbed(requestID, systemName, nearestPlanet, 'In progress...', requestClient, shipSize, 'Refuel', responderUser)], 
+                            if(allThreadMembers.has(responderUser.user.id)) {
+                                i.reply({ephemeral: true, content: 'You are already part of this thread.'});
+    
+                            } else {
+                                thread.members.add(responderUser.user.id);
+                                i.reply({ ephemeral: true, content: `You have succesfully replied to the request and have been added to ${thread}.`});
+
+                                alertMessage.edit({embeds: [generateAlertEmbed(requestID, systemName, nearestPlanet, 'In progress...', requestClient, shipSize, 'Refuel', responderUser)], 
                                     components: [new ActionRowBuilder().addComponents([abortButton, completeButton])]});
+                            }
                         } else if (i.customId === 'abortButton') {
-                            thread.delete();
-                            alertMessage.delete();
 
-                            archiveChannel.send({embeds: [generateAlertEmbed(requestID, systemName, nearestPlanet, 'Aborted', requestClient, shipSize, 'Refuel', responderUser)]});
+                            if(!allThreadMembers.has(responderUser.user.id)) {
+                                i.reply({ephemeral: true, content: 'You are not part of this request.'});
+    
+                            } else {
+                                thread.delete();
+                                alertMessage.delete();
+
+                                archiveChannel.send({embeds: [generateAlertEmbed(requestID, systemName, nearestPlanet, 'Aborted', requestClient, shipSize, 'Refuel', responderUser)]});
+                            }
                         } else if (i.customId === 'completeButton') {
-                            thread.delete();
-                            alertMessage.delete();
 
-                            const successEmbed = generateAlertEmbed(requestID, systemName, nearestPlanet, 'Completed', requestClient, shipSize, 'Refuel', responderUser);
-                            successEmbed.setColor('#57F287');
-                            archiveChannel.send({embeds: [successEmbed]});
+                            if(!allThreadMembers.has(responderUser.user.id)) {
+                                i.reply({ephemeral: true, content: 'You are not part of this request.'});
+    
+                            } else {
+                                thread.delete();
+                                alertMessage.delete();
+
+                                const successEmbed = generateAlertEmbed(requestID, systemName, nearestPlanet, 'Completed', requestClient, shipSize, 'Refuel', responderUser);
+                                successEmbed.setColor('#57F287');
+                                archiveChannel.send({embeds: [successEmbed]});
+                            }
                         }
                     })
                 }})
