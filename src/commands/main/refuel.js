@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, EmbedBuilder, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, ComponentType, ChannelType, ButtonStyle } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, ComponentType, ChannelType, ButtonStyle, PermissionsBitField } = require('discord.js');
 const { ActionRowBuilder, ButtonBuilder } = require('@discordjs/builders');
 const fs = require('fs');
 const selectables = require('../../resources/selectables.json');
@@ -21,7 +21,7 @@ function generateRandomID() {
  * @returns {boolean} True or false depending on if the user has admin permissions.
  */
 function isAdmin(i) {
-    return i.member.permissionsIn(i.channel).has("ADMINISTRATOR")
+    return i.member.permissionsIn(i.channel).has(PermissionsBitField.Flags.Administrator);
   }
 
 /**
@@ -176,6 +176,7 @@ module.exports = {
         let nearestPlanet;
         let shipSize;
         let requestClient;
+        const responderUser = [];
 
         const config = await readConfigFile();
 
@@ -242,42 +243,48 @@ module.exports = {
                             return;
                         }
 
-                        const responderUser = await i.guild.members.fetch(i.member.id);
+                        const currentUser = await i.guild.members.fetch(i.member.id);
+                        
+                        if(!responderUser.includes(currentUser)) {
+                            responderUser.push(currentUser);
+                        }
+
                         const allThreadMembers = await thread.members.fetch();
 
                         if(i.customId === 'respondButton') {
 
-                            if(allThreadMembers.has(responderUser.user.id)) {
+                            if(allThreadMembers.has(currentUser.user.id)) {
                                 i.reply({ephemeral: true, content: 'You are already part of this thread.'});
     
                             } else {
-                                thread.members.add(responderUser.user.id);
+                                thread.members.add(currentUser.user.id);
                                 i.reply({ ephemeral: true, content: `You have succesfully replied to the request and have been added to ${thread}.`});
 
-                                alertMessage.edit({embeds: [generateAlertEmbed(requestID, systemName, nearestPlanet, 'In progress...', requestClient, shipSize, 'Refuel', responderUser)], 
-                                    components: [new ActionRowBuilder().addComponents([abortButton, completeButton])]});
+                                alertMessage.edit({embeds: [generateAlertEmbed(requestID, systemName, nearestPlanet, 'In progress...', requestClient, shipSize, 'Refuel', responderUser[0])], 
+                                    components: [new ActionRowBuilder().addComponents([respondButton, abortButton, completeButton])]});
                             }
                         } else if (i.customId === 'abortButton') {
 
-                            if(!allThreadMembers.has(responderUser.user.id)) {
+                            if(!allThreadMembers.has(currentUser.user.id)) {
                                 i.reply({ephemeral: true, content: 'You are not part of this request.'});
     
                             } else {
                                 thread.delete();
                                 alertMessage.delete();
 
-                                archiveChannel.send({embeds: [generateAlertEmbed(requestID, systemName, nearestPlanet, 'Aborted', requestClient, shipSize, 'Refuel', responderUser)]});
+                                archiveChannel.send({embeds: [generateAlertEmbed(requestID, systemName, nearestPlanet, 'Aborted', requestClient, shipSize, 'Refuel', responderUser[0])]});
                             }
                         } else if (i.customId === 'completeButton') {
 
-                            if(!allThreadMembers.has(responderUser.user.id)) {
+                            if(!allThreadMembers.has(currentUser.user.id)) {
                                 i.reply({ephemeral: true, content: 'You are not part of this request.'});
     
                             } else {
                                 thread.delete();
                                 alertMessage.delete();
+                                console.log(responderUser);
 
-                                const successEmbed = generateAlertEmbed(requestID, systemName, nearestPlanet, 'Completed', requestClient, shipSize, 'Refuel', responderUser);
+                                const successEmbed = generateAlertEmbed(requestID, systemName, nearestPlanet, 'Completed', requestClient, shipSize, 'Refuel', responderUser[0]);
                                 successEmbed.setColor('#57F287');
                                 archiveChannel.send({embeds: [successEmbed]});
                             }
