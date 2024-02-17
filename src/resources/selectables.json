@@ -1,24 +1,63 @@
 {
-    "serviceType": [
+    "supplyTypes": [
         {
-            "label": "Ammo",
-            "value": "Ammo"
+            "label": "Ammunition"
         },
         {
-            "label": "Armor",
-            "value": "Armor"
+            "label": "Armor"
         },
         {
-            "label": "Medical",
-            "value": "Medical"
+            "label": "Rations"
         },
         {
-            "label": "Vehicle",
-            "value": "Vehicle"
+            "label": "Vehicles",
+            "value": [
+                "Cyclone MT",
+                "Nova Tank",
+                "Ursa Rover"
+            ]
         },
         {
-            "label": "Weapon",
-            "value": "Weapon"
+            "label": "Weaponary"
+        }
+    ],
+
+    "vehicles": [
+        {
+            "label": "Cyclone MT"
+        },
+        {
+            "label": "Nova Tank"
+        },
+        {
+            "label": "Ursa Rover"
+        }
+    ],
+
+    "weapons": [
+        {
+            "label": "P4-AR"
+        },
+        {
+            "label": "PS-38"
+        },
+        {
+            "label": "P8-SC"
+        },
+        {
+            "label": "BR-2"
+        },
+        {
+            "label": "Karna"
+        },
+        {
+            "label": "FS-9"
+        },
+        {
+            "label": "Paramedical Device"
+        },
+        {
+            "label": "Pyro Multi-Tool (+TB)"
         }
     ],
 
