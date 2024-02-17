@@ -220,10 +220,13 @@ module.exports = {
                     const alertMessage = await logisticsChannel.send({ embeds: [generateAlertEmbed(requestID, systemName, nearestPlanet, 'Open', i.user, shipSize, 'Refuel', 'N/A')], components: [new ActionRowBuilder().addComponents(respondButton)]});
                     const alertRespondButtonCollector = await alertMessage.createMessageComponentCollector({componentType: ComponentType.Button});
 
+                    const archiveChannel = await client.channels.fetch(config.archiveChannel);
+
                     threadDeleteButtonCollector.on('collect', async i => {
                         if(i.customId === 'threadCancelButton') {
                             thread.delete();
-                            alertMessage.delete(); // For now original alert gets deleted, later most likely archive it in some way
+                            alertMessage.delete();
+                            archiveChannel.send({embeds: [generateAlertEmbed(requestID, systemName, nearestPlanet, 'Cancelled', i.user, shipSize, 'Refuel', i.user)]});
                         }
                     })
 
@@ -232,8 +235,6 @@ module.exports = {
                             await i.reply({ephemeral: true, content: 'You do not have the permission to interact with this.'});
                             return;
                         }
-
-                        const archiveChannel = await client.channels.fetch(config.archiveChannel);
 
                         if (i.customId === 'respondButton') {
                             
