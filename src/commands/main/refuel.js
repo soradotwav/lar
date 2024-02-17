@@ -209,7 +209,8 @@ module.exports = {
                     const userChannel = await client.channels.fetch(config.userChannel);
                     const thread = await userChannel.threads.create({ name: `Request #${requestID}`, type: ChannelType.PrivateThread });
 
-                    const threadWelcomeMessage = await thread.send({ embeds: [generateThreadEmbed(requestID)], components: [new ActionRowBuilder().addComponents(threadCancelButton)]});
+                    const threadWelcomeMessage = await thread.send({ embeds: [generateThreadEmbed(requestID)], 
+                        components: [new ActionRowBuilder().addComponents(threadCancelButton)]});
                     const threadDeleteButtonCollector = await threadWelcomeMessage.createMessageComponentCollector({ componentType: ComponentType.Button });
 
                     await thread.members.add(i.user.id);
@@ -232,6 +233,8 @@ module.exports = {
                             return;
                         }
 
+                        const archiveChannel = await client.channels.fetch(config.archiveChannel);
+
                         if (i.customId === 'respondButton') {
                             
                             if(!thread.members.fetch(i.user.id)) { //REMOVE ! WHEN DONE TESTING
@@ -240,14 +243,23 @@ module.exports = {
                             } else {
                                 await thread.members.add(i.user.id);
                                 await i.reply({ ephemeral: true, content: `You have succesfully replied to the request and have been added to ${thread}.`});
-                                alertMessage.edit({embeds: alertMessage.embeds, components: [new ActionRowBuilder().addComponents([abortButton, completeButton])]});
+
+                                alertMessage.edit({embeds: [generateAlertEmbed(requestID, systemName, nearestPlanet, 'In progress...', i.user, shipSize, 'Refuel')], 
+                                    components: [new ActionRowBuilder().addComponents([abortButton, completeButton])]});
                             } 
                         } else if (i.customId === 'abortButton') {
-                            thread.delete();
-                            alertMessage.delete(); // For now original alert gets deleted, later most likely archive it in some way
+                            await thread.delete();
+                            await alertMessage.delete(); // For now original alert gets deleted, later most likely archive it in some way
+
+                            archiveChannel.send({embeds: [generateAlertEmbed(requestID, systemName, nearestPlanet, 'Aborted', i.user, shipSize, 'Refuel')]});
+                            
                         } else if (i.customId === 'completeButton') {
                             thread.delete();
                             alertMessage.delete(); // For now original alert gets deleted, later most likely archive it in some way
+
+                            const successEmbed = generateAlertEmbed(requestID, systemName, nearestPlanet, 'Completed', i.user, shipSize, 'Refuel');
+                            successEmbed.setColor('#57F287');
+                            archiveChannel.send({embeds: [successEmbed]});
                         }
                     })
                 }})
