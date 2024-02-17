@@ -227,7 +227,7 @@ module.exports = {
                     })
 
                     alertRespondButtonCollector.on('collect', async i => {
-                        if(!i.member.roles.cache.has(config.logisticsRole) && !isAdmin(i)) {
+                        if(!i.member.roles.cache.has(config.logisticsRole) && !isAdmin) {
                             await i.reply({ephemeral: true, content: 'You do not have the permission to interact with this.'});
                             return;
                         }
