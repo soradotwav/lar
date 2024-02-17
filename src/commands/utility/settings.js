@@ -50,6 +50,18 @@ module.exports = {
                         .setRequired(true)
                 )
         )
+
+        // Set Request Archive Channel Subcommand
+        .addSubcommand(subcommand => 
+            subcommand.setName('archivechannel')
+                .setDescription('Set the channel where the alerts will be archived.')
+                .addChannelOption(option => 
+                    option.setName('archivechannel')
+                        .setDescription('Select a channel...')
+                        .addChannelTypes(ChannelType.GuildText)
+                        .setRequired(true)
+                )
+        )
         
         // Set Logistics Role
         .addSubcommand(subcommand => 
@@ -89,6 +101,14 @@ module.exports = {
             interaction.reply({
                 ephemeral: true,
                 content: `Logistics role was set to ${userSelection.role}.`
+            });
+        } else if (interaction.options.getSubcommand() === 'archivechannel') {
+            const userSelection = interaction.options._hoistedOptions[0];
+            writeToConfig('archiveChannel', userSelection.value);
+
+            interaction.reply({
+                ephemeral: true,
+                content: `Request archive channel was set to ${userSelection.channel}.`
             });
         }
     }
