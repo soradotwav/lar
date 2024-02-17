@@ -38,6 +38,10 @@ function readConfigFile() {
     }
   }
 
+function getUser(interaction) {
+    return interaction.member;
+}
+
 /**
  * Creates an alert embed message for a refuel request.
  * @param {string} requestID - The unique ID of the refuel request.
@@ -101,6 +105,63 @@ function generateThreadEmbed(requestID) {
         .setTimestamp();
 }
 
+// Select Menu for System
+const selectSystem = new StringSelectMenuBuilder()
+.setCustomId('selectSystem')
+.setPlaceholder('Select your current system...')
+.addOptions(
+    selectables.starSystems.map(object => {
+        return new StringSelectMenuOptionBuilder()
+            .setLabel(object.label)
+            .setValue(object.label)
+    })
+);
+
+// Select Menu for Nearest Planet
+const selectPlanet = new StringSelectMenuBuilder()
+.setCustomId('selectPlanet')
+.setPlaceholder('Select the nearest planet to you...')
+.addOptions(
+    selectables.stantonLocations.map(object => {
+        return new StringSelectMenuOptionBuilder()
+            .setLabel(object.label)
+            .setValue(object.label)
+    })
+);
+
+// Select Menu for Ship Size
+const selectShipSize = new StringSelectMenuBuilder()
+.setCustomId('selectShipSize')
+.setPlaceholder('Select the size of your ship...')
+.addOptions(
+    selectables.shipSize.map(object => {
+        return new StringSelectMenuOptionBuilder()
+            .setLabel(object.label)
+            .setValue(object.label)
+    })
+);
+
+// Cancel Button that deletes current thread
+const threadCancelButton = new ButtonBuilder()
+.setCustomId('threadCancelButton')
+.setLabel('Cancel')
+.setStyle(ButtonStyle.Danger);
+
+const abortButton = new ButtonBuilder()
+.setCustomId('abortButton')
+.setLabel('Abort')
+.setStyle(ButtonStyle.Danger);
+
+const respondButton = new ButtonBuilder()
+.setCustomId('respondButton')
+.setLabel('Respond')
+.setStyle(ButtonStyle.Success);
+
+const completeButton = new ButtonBuilder()
+    .setCustomId('completeButton')
+    .setLabel('Complete')
+    .setStyle(ButtonStyle.Success);
+
 module.exports = {
     // Specifies command
     data: new SlashCommandBuilder()
@@ -113,75 +174,18 @@ module.exports = {
         const requestID = generateRandomID();
         let systemName;
         let nearestPlanet;
-        const requestStatus = 'Open';
-        const clientDiscordUser = 'soradotwav';
         let shipSize;
+        let requestClient;
 
-        const config = readConfigFile();
+        const config = await readConfigFile();
 
         // Check for proper channel usage
-        if(interaction.channel.id != config.userChannel && interaction.channel.id != config.logisticsChannel && !isAdmin(interaction)) {
+        if(interaction.channel.id != config.userChannel && !isAdmin(interaction)) {
 
             const correctChannel = await client.channels.fetch(config.userChannel);
             interaction.reply({ephemeral: true, content: `You are not allowed to use this command in this channel. Please try again in ${correctChannel} or contact a system administrator.`});
 
         } else {
-            // Select Menu for System
-            const selectSystem = new StringSelectMenuBuilder()
-            .setCustomId('selectSystem')
-            .setPlaceholder('Select your current system...')
-            .addOptions(
-                selectables.starSystems.map(object => {
-                    return new StringSelectMenuOptionBuilder()
-                        .setLabel(object.label)
-                        .setValue(object.label)
-                })
-            );
-
-            // Select Menu for Nearest Planet
-            const selectPlanet = new StringSelectMenuBuilder()
-                .setCustomId('selectPlanet')
-                .setPlaceholder('Select the nearest planet to you...')
-                .addOptions(
-                    selectables.stantonLocations.map(object => {
-                        return new StringSelectMenuOptionBuilder()
-                            .setLabel(object.label)
-                            .setValue(object.label)
-                    })
-                );
-
-            // Select Menu for Ship Size
-            const selectShipSize = new StringSelectMenuBuilder()
-                .setCustomId('selectShipSize')
-                .setPlaceholder('Select the size of your ship...')
-                .addOptions(
-                    selectables.shipSize.map(object => {
-                        return new StringSelectMenuOptionBuilder()
-                            .setLabel(object.label)
-                            .setValue(object.label)
-                    })
-                );
-    
-            // Cancel Button that deletes current thread
-            const threadCancelButton = new ButtonBuilder()
-                .setCustomId('threadCancelButton')
-                .setLabel('Cancel')
-                .setStyle(ButtonStyle.Danger);
-
-            const abortButton = new ButtonBuilder()
-                .setCustomId('abortButton')
-                .setLabel('Abort')
-                .setStyle(ButtonStyle.Danger);
-
-            const respondButton = new ButtonBuilder()
-                .setCustomId('respondButton')
-                .setLabel('Respond')
-                .setStyle(ButtonStyle.Success);
-
-            const completeButton = new ButtonBuilder()
-                    .setCustomId('completeButton')
-                    .setLabel('Complete')
-                    .setStyle(ButtonStyle.Success);
 
             // Response to initial command
             const selectMenuResponse = await interaction.reply({
@@ -191,9 +195,11 @@ module.exports = {
 
             // Collector of responses for Select Menu's
             const selectMenuCollector = selectMenuResponse.createMessageComponentCollector({ componentType: ComponentType.StringSelect, time: 60_000});
+            
             selectMenuCollector.on('collect', async i => {
                 // System selection response storage and sending of planet selection
                 if(i.customId === 'selectSystem') {
+                    requestClient = getUser(interaction);
                     systemName = i.values[0];
                     await i.update({ components: [new ActionRowBuilder().addComponents(selectPlanet)], ephemeral: true });
         
@@ -213,11 +219,11 @@ module.exports = {
                         components: [new ActionRowBuilder().addComponents(threadCancelButton)]});
                     const threadDeleteButtonCollector = await threadWelcomeMessage.createMessageComponentCollector({ componentType: ComponentType.Button });
 
-                    await thread.members.add(i.user.id);
+                    await thread.members.add(requestClient.id);
                     await i.update({ephemeral: true, embeds: [generateConfirmationEmbed(requestID, thread)], components: []});
 
                     const logisticsChannel = await client.channels.fetch(config.logisticsChannel);
-                    const alertMessage = await logisticsChannel.send({ embeds: [generateAlertEmbed(requestID, systemName, nearestPlanet, 'Open', i.user, shipSize, 'Refuel', 'N/A')], components: [new ActionRowBuilder().addComponents(respondButton)]});
+                    const alertMessage = await logisticsChannel.send({ embeds: [generateAlertEmbed(requestID, systemName, nearestPlanet, 'Open', requestClient, shipSize, 'Refuel', 'N/A')], components: [new ActionRowBuilder().addComponents(respondButton)]});
                     const alertRespondButtonCollector = await alertMessage.createMessageComponentCollector({componentType: ComponentType.Button});
 
                     const archiveChannel = await client.channels.fetch(config.archiveChannel);
@@ -226,7 +232,7 @@ module.exports = {
                         if(i.customId === 'threadCancelButton') {
                             thread.delete();
                             alertMessage.delete();
-                            archiveChannel.send({embeds: [generateAlertEmbed(requestID, systemName, nearestPlanet, 'Cancelled', i.user, shipSize, 'Refuel', i.user)]});
+                            archiveChannel.send({embeds: [generateAlertEmbed(requestID, systemName, nearestPlanet, 'Cancelled', requestClient, shipSize, 'Refuel', 'N/A')]});
                         }
                     })
 
@@ -236,29 +242,24 @@ module.exports = {
                             return;
                         }
 
-                        if (i.customId === 'respondButton') {
-                            
-                            if(!thread.members.fetch(i.user.id)) { //REMOVE ! WHEN DONE TESTING
-                                await i.reply({ ephemeral: true, content: 'You are already in this thread!'});
+                        const responderUser = await i.guild.members.fetch(i.member.id);
 
-                            } else {
-                                await thread.members.add(i.user.id);
-                                await i.reply({ ephemeral: true, content: `You have succesfully replied to the request and have been added to ${thread}.`});
+                        if(i.customId === 'respondButton') {
+                            thread.members.add(responderUser.user.id);
+                            i.reply({ ephemeral: true, content: `You have succesfully replied to the request and have been added to ${thread}.`});
 
-                                alertMessage.edit({embeds: [generateAlertEmbed(requestID, systemName, nearestPlanet, 'In progress...', i.user, shipSize, 'Refuel', i.user)], 
+                            alertMessage.edit({embeds: [generateAlertEmbed(requestID, systemName, nearestPlanet, 'In progress...', requestClient, shipSize, 'Refuel', responderUser)], 
                                     components: [new ActionRowBuilder().addComponents([abortButton, completeButton])]});
-                            } 
                         } else if (i.customId === 'abortButton') {
-                            await thread.delete();
-                            await alertMessage.delete();
+                            thread.delete();
+                            alertMessage.delete();
 
-                            archiveChannel.send({embeds: [generateAlertEmbed(requestID, systemName, nearestPlanet, 'Aborted', i.user, shipSize, 'Refuel', i.user)]});
-                            
+                            archiveChannel.send({embeds: [generateAlertEmbed(requestID, systemName, nearestPlanet, 'Aborted', requestClient, shipSize, 'Refuel', responderUser)]});
                         } else if (i.customId === 'completeButton') {
                             thread.delete();
                             alertMessage.delete();
 
-                            const successEmbed = generateAlertEmbed(requestID, systemName, nearestPlanet, 'Completed', i.user, shipSize, 'Refuel', i.user);
+                            const successEmbed = generateAlertEmbed(requestID, systemName, nearestPlanet, 'Completed', requestClient, shipSize, 'Refuel', responderUser);
                             successEmbed.setColor('#57F287');
                             archiveChannel.send({embeds: [successEmbed]});
                         }
