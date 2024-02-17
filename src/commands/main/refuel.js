@@ -48,7 +48,7 @@ function readConfigFile() {
  * @param {string} shipSize - The size category of the ship requiring refueling.
  * @returns {EmbedBuilder} An EmbedBuilder object configured with the refuel request details.
  */
-function generateAlertEmbed(requestID, systemName, nearestPlanet, requestStatus, clientUserName, shipSize, requestType) {
+function generateAlertEmbed(requestID, systemName, nearestPlanet, requestStatus, clientUserName, shipSize, requestType, handledBy) {
     return new EmbedBuilder()
         .setAuthor({ name: 'Logistics Active Resupply' })
         .setDescription(`Refuel Request #${requestID}`)
@@ -59,7 +59,7 @@ function generateAlertEmbed(requestID, systemName, nearestPlanet, requestStatus,
             { name: 'Client', value: `${clientUserName}`, inline: true },
             { name: 'Ship Size', value: `${shipSize}`, inline: true},
             { name: 'Request Type', value: `${requestType}`, inline: true},
-            { name: 'Request being handled by', value: `N/A`, inline: false })
+            { name: 'Request being handled by', value: `${handledBy}`, inline: false })
         .setThumbnail('https://cdn.discordapp.com/avatars/1207431210528411668/69ef505a61c1fb847f56aa83b7042421?size=1024')
         .setColor('#9b0002')
         .setFooter({text: `L.A.R. ${loreYear}`})
@@ -217,7 +217,7 @@ module.exports = {
                     await i.update({ephemeral: true, embeds: [generateConfirmationEmbed(requestID, thread)], components: []});
 
                     const logisticsChannel = await client.channels.fetch(config.logisticsChannel);
-                    const alertMessage = await logisticsChannel.send({ embeds: [generateAlertEmbed(requestID, systemName, nearestPlanet, 'Open', i.user, shipSize, 'Refuel')], components: [new ActionRowBuilder().addComponents(respondButton)]});
+                    const alertMessage = await logisticsChannel.send({ embeds: [generateAlertEmbed(requestID, systemName, nearestPlanet, 'Open', i.user, shipSize, 'Refuel', 'N/A')], components: [new ActionRowBuilder().addComponents(respondButton)]});
                     const alertRespondButtonCollector = await alertMessage.createMessageComponentCollector({componentType: ComponentType.Button});
 
                     threadDeleteButtonCollector.on('collect', async i => {
@@ -244,20 +244,20 @@ module.exports = {
                                 await thread.members.add(i.user.id);
                                 await i.reply({ ephemeral: true, content: `You have succesfully replied to the request and have been added to ${thread}.`});
 
-                                alertMessage.edit({embeds: [generateAlertEmbed(requestID, systemName, nearestPlanet, 'In progress...', i.user, shipSize, 'Refuel')], 
+                                alertMessage.edit({embeds: [generateAlertEmbed(requestID, systemName, nearestPlanet, 'In progress...', i.user, shipSize, 'Refuel', i.user)], 
                                     components: [new ActionRowBuilder().addComponents([abortButton, completeButton])]});
                             } 
                         } else if (i.customId === 'abortButton') {
                             await thread.delete();
-                            await alertMessage.delete(); // For now original alert gets deleted, later most likely archive it in some way
+                            await alertMessage.delete();
 
-                            archiveChannel.send({embeds: [generateAlertEmbed(requestID, systemName, nearestPlanet, 'Aborted', i.user, shipSize, 'Refuel')]});
+                            archiveChannel.send({embeds: [generateAlertEmbed(requestID, systemName, nearestPlanet, 'Aborted', i.user, shipSize, 'Refuel', i.user)]});
                             
                         } else if (i.customId === 'completeButton') {
                             thread.delete();
-                            alertMessage.delete(); // For now original alert gets deleted, later most likely archive it in some way
+                            alertMessage.delete();
 
-                            const successEmbed = generateAlertEmbed(requestID, systemName, nearestPlanet, 'Completed', i.user, shipSize, 'Refuel');
+                            const successEmbed = generateAlertEmbed(requestID, systemName, nearestPlanet, 'Completed', i.user, shipSize, 'Refuel', i.user);
                             successEmbed.setColor('#57F287');
                             archiveChannel.send({embeds: [successEmbed]});
                         }
