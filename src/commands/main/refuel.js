@@ -227,10 +227,15 @@ module.exports = {
                     })
 
                     alertRespondButtonCollector.on('collect', async i => {
+                        if(!i.member.roles.cache.has(config.logisticsRole) && !isAdmin(i)) {
+                            await i.reply({ephemeral: true, content: 'You do not have the permission to interact with this.'});
+                            return;
+                        }
+
                         if (i.customId === 'respondButton') {
                             
                             if(!thread.members.fetch(i.user.id)) { //REMOVE ! WHEN DONE TESTING
-                                i.reply({ ephemeral: true, content: 'You are already in this thread!'});
+                                await i.reply({ ephemeral: true, content: 'You are already in this thread!'});
 
                             } else {
                                 await thread.members.add(i.user.id);
@@ -247,7 +252,5 @@ module.exports = {
                     })
                 }})
             }
-
-        //const embed = generateAlertEmbed(requestID, systemName, nearestPlanet, requestStatus, clientUserName, shipSize, requestType);
     }
 }
