@@ -256,8 +256,8 @@ module.exports = {
 
                         if(i.customId === 'respondButton') {
 
-                            if(allThreadMembers.has(currentUser.user.id)) {
-                                i.reply({ephemeral: true, content: 'You are already part of this thread.'});
+                            if(allThreadMembers.has(currentUser.user.id) || currentUser.user.id == requestClient.id) {
+                                i.reply({ephemeral: true, content: 'You have already responded to this thread or are the client of it.'});
     
                             } else {
                                 thread.members.add(currentUser.user.id);
