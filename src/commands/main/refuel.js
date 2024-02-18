@@ -160,7 +160,7 @@ const respondButton = new ButtonBuilder()
 const completeButton = new ButtonBuilder()
     .setCustomId('completeButton')
     .setLabel('Complete')
-    .setStyle(ButtonStyle.Success);
+    .setStyle(ButtonStyle.Primary);
 
 module.exports = {
     // Specifies command
