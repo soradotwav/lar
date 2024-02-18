@@ -216,7 +216,7 @@ module.exports = {
                     shipSize = i.values[0];
 
                     const userChannel = await client.channels.fetch(config.userChannel);
-                    const thread = await userChannel.threads.create({ name: `Request #${requestID}`, type: ChannelType.PrivateThread });
+                    const thread = await userChannel.threads.create({ name: `Refueling #${requestID}`, type: ChannelType.PrivateThread });
 
                     const threadWelcomeMessage = await thread.send({ embeds: [generateThreadEmbed(requestID)], 
                         components: [new ActionRowBuilder().addComponents(threadCancelButton)]});
