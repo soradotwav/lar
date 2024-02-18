@@ -180,7 +180,9 @@ module.exports = {
 
         const config = await readConfigFile();
 
-        // Check for proper channel usage
+        try {
+
+            // Check for proper channel usage
         if(interaction.channel.id != config.userChannel && !isAdmin(interaction)) {
 
             const correctChannel = await client.channels.fetch(config.userChannel);
@@ -231,7 +233,8 @@ module.exports = {
 
                     threadDeleteButtonCollector.on('collect', async i => {
                         if(i.customId === 'threadCancelButton') {
-                            thread.delete();
+                            thread.setArchived(true);
+                            i.reply({ephemeral: true, content: 'You have sucessfully cancelled this alert. This thread is now locked.'});
                             alertMessage.delete();
                             archiveChannel.send({embeds: [generateAlertEmbed(requestID, systemName, nearestPlanet, 'Cancelled', requestClient, shipSize, 'Refuel', 'N/A')]});
                         }
@@ -269,7 +272,8 @@ module.exports = {
                                 i.reply({ephemeral: true, content: 'You are not part of this request.'});
     
                             } else {
-                                thread.delete();
+                                thread.setArchived(true);
+                                i.reply({ephemeral: true, content: 'You have sucessfully closed this alert. This thread is now locked.'});
                                 alertMessage.delete();
 
                                 archiveChannel.send({embeds: [generateAlertEmbed(requestID, systemName, nearestPlanet, 'Aborted', requestClient, shipSize, 'Refuel', responderUser[0])]});
@@ -280,7 +284,8 @@ module.exports = {
                                 i.reply({ephemeral: true, content: 'You are not part of this request.'});
     
                             } else {
-                                thread.delete();
+                                thread.setArchived(true);
+                                i.reply({ephemeral: true, content: 'You have sucessfully closed this alert. This thread is now locked.'});
                                 alertMessage.delete();
                                 console.log(responderUser);
 
@@ -292,5 +297,9 @@ module.exports = {
                     })
                 }})
             }
+        } catch (error) {
+            await interaction.channel.send({ephemeral: true, content: 'Something went wrong, please try again. If this keeps happening, please contact an admin.'})
+            console.log(error);
+        }
     }
 }
