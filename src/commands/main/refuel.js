@@ -97,7 +97,7 @@ function generateConfirmationEmbed(requestID, openedThread) {
 function generateThreadEmbed(requestID) {
     return new EmbedBuilder()
         .setAuthor({ name: 'Logistics Active Resupply'})
-        .setTitle(`Refuel Request ${requestID}`)
+        .setTitle(`Refuel Request #${requestID}`)
         .setDescription(`Thank you for choosing Logistics Active Resupply as your quick refueling service. \n\nA member of the logistics team will very soon join this thread and discuss all needed details to be able to head to your location and get you fueled back up and flying in the verse again in no time.\n\nIf, for whichever reason, you'd like to close this thread and cancel the request, simply press the button below. Thank you for your patience, and again, thank you for choosing L.A.R.`)
         .setThumbnail('https://cdn.discordapp.com/avatars/1207431210528411668/69ef505a61c1fb847f56aa83b7042421?size=1024')
         .setColor('#9b0002')
@@ -233,10 +233,14 @@ module.exports = {
 
                     threadDeleteButtonCollector.on('collect', async i => {
                         if(i.customId === 'threadCancelButton') {
-                            thread.setArchived(true);
-                            i.reply({ephemeral: true, content: 'You have sucessfully cancelled this alert. This thread is now locked.'});
-                            alertMessage.delete();
-                            archiveChannel.send({embeds: [generateAlertEmbed(requestID, systemName, nearestPlanet, 'Cancelled', requestClient, shipSize, 'Refuel', 'N/A')]});
+                            if(!currentUser.user.id == requestClient.id) {
+                                await i.reply({ephemeral: true, content: `You are not the client of this request and are thus not able to cancel it. If you are part of the response team and need to cancel this request, please use the Abort button in ${logisticsChannel}`});
+                            } else {
+                                await i.reply({ephemeral: true, content: 'You have sucessfully cancelled this alert. This thread is now locked.'});
+                                thread.setArchived(true);
+                                alertMessage.delete();
+                                archiveChannel.send({embeds: [generateAlertEmbed(requestID, systemName, nearestPlanet, 'Cancelled', requestClient, supplyTypes, 'Resupply', 'N/A')]});
+                            }
                         }
                     })
 
@@ -272,8 +276,8 @@ module.exports = {
                                 i.reply({ephemeral: true, content: 'You are not part of this request.'});
     
                             } else {
+                                await i.reply({ephemeral: true, content: 'You have sucessfully closed this alert. This thread is now locked.'});
                                 thread.setArchived(true);
-                                i.reply({ephemeral: true, content: 'You have sucessfully closed this alert. This thread is now locked.'});
                                 alertMessage.delete();
 
                                 archiveChannel.send({embeds: [generateAlertEmbed(requestID, systemName, nearestPlanet, 'Aborted', requestClient, shipSize, 'Refuel', responderUser[0])]});
@@ -284,10 +288,9 @@ module.exports = {
                                 i.reply({ephemeral: true, content: 'You are not part of this request.'});
     
                             } else {
+                                await i.reply({ephemeral: true, content: 'You have sucessfully closed this alert. This thread is now locked.'});
                                 thread.setArchived(true);
-                                i.reply({ephemeral: true, content: 'You have sucessfully closed this alert. This thread is now locked.'});
                                 alertMessage.delete();
-                                console.log(responderUser);
 
                                 const successEmbed = generateAlertEmbed(requestID, systemName, nearestPlanet, 'Completed', requestClient, shipSize, 'Refuel', responderUser[0]);
                                 successEmbed.setColor('#57F287');
