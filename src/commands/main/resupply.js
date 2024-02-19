@@ -106,6 +106,33 @@ function generateThreadEmbed(requestID) {
         .setTimestamp();
 }
 
+function generateItemChoicesEmbed(supplyTypes) {
+
+    const possibleFields = [];
+
+    if(supplyTypes.includes('Ammunition')) {
+        possibleFields.push({ name: 'Selectable Ammunition', value: `• ${selectables.ammunition.join('\n•')}`, inline: true })
+    }
+
+    if(supplyTypes.includes('Weaponry')) {
+        possibleFields.push({ name: 'Selectable Weapons', value: `• ${selectables.weaponry.join('\n•')}`, inline: true })
+    }
+
+    if(supplyTypes.includes('Vehicles')) {
+        possibleFields.push({ name: 'Selectable Vehicles', value: `• ${selectables.vehicles.join('\n•')}`, inline: true })
+    }
+
+    return new EmbedBuilder()
+        .setAuthor({ name: 'Logistics Active Resupply'})
+        .setTitle(`Requestable items`)
+        .setDescription(`Due to you selecting options with multiple specific choices, such as weapons,  vehicles, or ammunition, please view the items you can request below and send the ones you'd like to request in this thread for the member of the logistics team handling your request.`)
+        .setThumbnail('https://cdn.discordapp.com/avatars/1207431210528411668/69ef505a61c1fb847f56aa83b7042421?size=1024')
+        .addFields(possibleFields)
+        .setColor('#9b0002')
+        .setFooter({text: `L.A.R. ${loreYear}`})
+        .setTimestamp();
+}
+
 // Select Menu for System
 const selectSystem = new StringSelectMenuBuilder()
 .setCustomId('selectSystem')
@@ -242,6 +269,13 @@ module.exports = {
     
                         const logisticsChannel = await client.channels.fetch(config.logisticsChannel);
                         const alertMessage = await logisticsChannel.send({ embeds: [generateAlertEmbed(requestID, systemName, nearestPlanet, 'Open', requestClient, supplyTypes, 'Resupply', responderUser, rushOrder)], components: [new ActionRowBuilder().addComponents(respondButton)]});
+                        
+                        if(supplyTypes.includes('Ammunition') ||
+                            supplyTypes.includes('Weaponry') ||
+                            supplyTypes.includes('Vehicles')) {
+                                await thread.send({embeds: [generateItemChoicesEmbed(supplyTypes)]});
+                            }
+                        
                         const alertRespondButtonCollector = await alertMessage.createMessageComponentCollector({componentType: ComponentType.Button});
     
                         const archiveChannel = await client.channels.fetch(config.archiveChannel);

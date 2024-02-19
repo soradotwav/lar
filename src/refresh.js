@@ -5,6 +5,19 @@ require('dotenv').config();
 
 module.exports = {
 	execute() {
+
+		// Construct and prepare an instance of the REST module
+		const rest = new REST().setToken(process.env.TOKEN);
+
+		//Delete old modules (uncomment when needed)
+		// rest.put(Routes.applicationGuildCommands(process.env.CLIENT_ID, process.env.GUILD_ID), { body: [] })
+    	// 	.then(() => console.log('Successfully deleted all guild commands.'))
+ 		// 	.catch(console.error);
+
+		// rest.put(Routes.applicationCommands(process.env.CLIENT_ID), { body: [] })
+ 		// 	.then(() => console.log('Successfully deleted all application commands.'))
+ 		// 	.catch(console.error);
+
 		const commands = [];
 		// Grab all the command folders from the commands directory you created earlier
 		const foldersPath = path.join(__dirname, 'commands');
@@ -25,18 +38,6 @@ module.exports = {
 				}
 			}
 		}
-
-		// Construct and prepare an instance of the REST module
-		const rest = new REST().setToken(process.env.TOKEN);
-
-		//Delete old modules
-		rest.put(Routes.applicationGuildCommands(process.env.CLIENT_ID, process.env.GUILD_ID), { body: [] })
-    		.then(() => console.log('Successfully deleted all guild commands.'))
- 			.catch(console.error);
-
-		rest.put(Routes.applicationCommands(process.env.CLIENT_ID), { body: [] })
- 			.then(() => console.log('Successfully deleted all application commands.'))
- 			.catch(console.error);
 
 		// and deploy your commands!
 		(async () => {

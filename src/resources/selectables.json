@@ -10,58 +10,40 @@
             "label": "Rations"
         },
         {
-            "label": "Vehicles",
-            "value": [
-                "Cyclone MT",
-                "Nova Tank",
-                "Ursa Rover"
-            ]
+            "label": "Vehicles"
         },
         {
-            "label": "Weaponary"
+            "label": "Weaponry"
         }
     ],
 
     "vehicles": [
-        {
-            "label": "Cyclone MT"
-        },
-        {
-            "label": "Nova Tank"
-        },
-        {
-            "label": "Ursa Rover"
-        }
+        "Cyclone MT",
+        "Nova Tank",
+        "Ursa Rover"
     ],
 
-    "weapons": [
-        {
-            "label": "P4-AR"
-        },
-        {
-            "label": "PS-38"
-        },
-        {
-            "label": "P8-SC"
-        },
-        {
-            "label": "BR-2"
-        },
-        {
-            "label": "Karna"
-        },
-        {
-            "label": "FS-9"
-        },
-        {
-            "label": "Paramedical Device"
-        },
-        {
-            "label": "Pyro Multi-Tool (+TB)"
-        },
-        {
-            "label": "MaxLift Tractor Beam"
-        }
+    "weaponry": [
+        "P4-AR",
+        "PS-38",
+        "P8-SC",
+        "BR-2",
+        "Karna",
+        "FS-9",
+        "ParaMed Medical Device",
+        "Pyro Multi-Tool (+TB)",
+        "MaxLift Tractor Beam"
+    ],
+
+    "ammunition": [
+        "P4-AR Magazine",
+        "PS-38 Magazine",
+        "P8-SC Magazine",
+        "BR-2 Magazine",
+        "Karna Magazine",
+        "FS-9 Magazine",
+        "ParaMed Refill",
+        "MaxLift Tractor Beam Battery"
     ],
 
     "starSystems": [
