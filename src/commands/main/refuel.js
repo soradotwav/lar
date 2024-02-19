@@ -255,6 +255,7 @@ module.exports = {
                                 await i.reply({ephemeral: true, content: `You are not the client of this request and are thus not able to cancel it. If you are part of the response team and need to cancel this request, please use the Abort button in ${logisticsChannel}`});
                             } else {
                                 await i.reply({ephemeral: true, content: 'You have sucessfully cancelled this alert. This thread is now locked.'});
+                                await threadWelcomeMessage.edit({embeds: threadWelcomeMessage.embeds, components: []});
                                 alertMessage.delete();
                                 thread.setArchived(true);
                                 archiveChannel.send({embeds: [generateAlertEmbed(requestID, systemName, nearestPlanet, 'Cancelled', requestClient, shipSize, 'Refuel', responderUser, rushOrder)]});
@@ -295,6 +296,7 @@ module.exports = {
     
                             } else {
                                 await i.reply({ephemeral: true, content: 'You have sucessfully closed this alert. This thread is now locked.'});
+                                await threadWelcomeMessage.edit({embeds: threadWelcomeMessage.embeds, components: []});
                                 alertMessage.delete();
                                 thread.setArchived(true);
 
@@ -307,6 +309,7 @@ module.exports = {
     
                             } else {
                                 await i.reply({ephemeral: true, content: 'You have sucessfully closed this alert. This thread is now locked.'});
+                                await threadWelcomeMessage.edit({embeds: threadWelcomeMessage.embeds, components: []});
                                 alertMessage.delete();
                                 thread.setArchived(true);
 
