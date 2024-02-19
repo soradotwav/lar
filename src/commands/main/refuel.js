@@ -106,6 +106,14 @@ function generateThreadEmbed(requestID) {
         .setTimestamp();
 }
 
+function generateCloseThreadEmbed(state, user) {
+    return new EmbedBuilder()
+        .setAuthor({ name: 'Logistics Active Resupply'})
+        .setDescription(`This request has been ${state} by ${user}. If this was a mistake, please reopen the request and a logistics member will be with you shortly.`)
+        .setFooter({ text: `L.A.R. ${loreYear}` })
+        .setTimestamp();
+}
+
 // Select Menu for System
 const selectSystem = new StringSelectMenuBuilder()
 .setCustomId('selectSystem')
@@ -256,6 +264,7 @@ module.exports = {
                             } else {
                                 await i.reply({ephemeral: true, content: 'You have sucessfully cancelled this alert. This thread is now locked.'});
                                 await threadWelcomeMessage.edit({embeds: threadWelcomeMessage.embeds, components: []});
+                                await thread.send({embeds: [generateCloseThreadEmbed('cancelled', currentUser)]});
                                 alertMessage.delete();
                                 thread.setArchived(true);
                                 archiveChannel.send({embeds: [generateAlertEmbed(requestID, systemName, nearestPlanet, 'Cancelled', requestClient, shipSize, 'Refuel', responderUser, rushOrder)]});
@@ -297,6 +306,7 @@ module.exports = {
                             } else {
                                 await i.reply({ephemeral: true, content: 'You have sucessfully closed this alert. This thread is now locked.'});
                                 await threadWelcomeMessage.edit({embeds: threadWelcomeMessage.embeds, components: []});
+                                await thread.send({embeds: [generateCloseThreadEmbed('cancelled', currentUser)]});
                                 alertMessage.delete();
                                 thread.setArchived(true);
 
@@ -310,6 +320,7 @@ module.exports = {
                             } else {
                                 await i.reply({ephemeral: true, content: 'You have sucessfully closed this alert. This thread is now locked.'});
                                 await threadWelcomeMessage.edit({embeds: threadWelcomeMessage.embeds, components: []});
+                                await thread.send({embeds: [generateCloseThreadEmbed('cancelled', currentUser)]});
                                 alertMessage.delete();
                                 thread.setArchived(true);
 
