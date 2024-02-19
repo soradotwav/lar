@@ -235,7 +235,7 @@ module.exports = {
                         const currentUser = await i.guild.members.fetch(i.member.id);
 
                         if(i.customId === 'threadCancelButton') {
-                            if(!currentUser.user.id == requestClient.id) {
+                            if(currentUser.user.id !== requestClient.id) {
                                 await i.reply({ephemeral: true, content: `You are not the client of this request and are thus not able to cancel it. If you are part of the response team and need to cancel this request, please use the Abort button in ${logisticsChannel}`});
                             } else {
                                 await i.reply({ephemeral: true, content: 'You have sucessfully cancelled this alert. This thread is now locked.'});
