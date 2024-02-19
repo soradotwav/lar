@@ -2,6 +2,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { Client, Collection, Events, GatewayIntentBits } = require('discord.js');
 
+require('./refresh.js').execute();
 require('dotenv').config();
 
 const client = new Client({
@@ -11,6 +12,8 @@ const client = new Client({
         GatewayIntentBits.Guilds,
     ],
 });
+
+client.login(process.env.TOKEN);
 
 client.commands = new Collection();
 const foldersPath = path.join(__dirname, 'commands');
@@ -54,5 +57,3 @@ client.on(Events.InteractionCreate, async interaction => {
 		}
 	}
 });
-
-client.login(process.env.TOKEN);
