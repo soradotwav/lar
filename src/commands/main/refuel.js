@@ -3,7 +3,6 @@ const { ActionRowBuilder, ButtonBuilder } = require('@discordjs/builders');
 const fs = require('fs');
 const selectables = require('../../resources/selectables.json');
 const path = require('path');
-
 const loreYear = new Date().getFullYear() + 930;
 
 /**
@@ -38,6 +37,10 @@ function readConfigFile() {
     }
   }
 
+/**
+ * Takes an interaction input and outputs the current member of the interaction
+ * @returns {member} Member of the current interaction.
+ */
 function getUser(interaction) {
     return interaction.member;
 }
@@ -48,8 +51,11 @@ function getUser(interaction) {
  * @param {string} systemName - The name of the system where refueling is requested.
  * @param {string} nearestPlanet - The nearest planet to the request location.
  * @param {string} requestStatus - The current status of the refuel request.
- * @param {string} clientUserName - The username of the client requesting refueling.
+ * @param {User} clientUserName - The user object of the client requesting refueling.
  * @param {string} shipSize - The size category of the ship requiring refueling.
+ * @param {string} requestType - The type of request that this alert is.
+ * @param {Array<User>} handledBy - An array of the user objects of the logistics members responding to the request.
+ * @param {string} rushOrder - The string containing information on whether or not the this order is a rush order.
  * @returns {EmbedBuilder} An EmbedBuilder object configured with the refuel request details.
  */
 function generateAlertEmbed(requestID, systemName, nearestPlanet, requestStatus, clientUserName, shipSize, requestType, handledBy, rushOrder) {
@@ -106,6 +112,12 @@ function generateThreadEmbed(requestID) {
         .setTimestamp();
 }
 
+/**
+ * Creates a confirmation embed message for closing a refuel request.
+ * @param {string} state - The state in which this request was closed.
+ * @param {User} user - The user object of the user closing the thread.
+ * @returns {EmbedBuilder} An EmbedBuilder object configured for confirming the closing of the refuel request.
+ */
 function generateCloseThreadEmbed(state, user) {
     return new EmbedBuilder()
         .setAuthor({ name: 'Logistics Active Resupply'})
@@ -159,7 +171,6 @@ const selectShipSize = new StringSelectMenuBuilder()
     })
 );
 
-// Cancel Button that deletes current thread
 const threadCancelButton = new ButtonBuilder()
 .setCustomId('threadCancelButton')
 .setLabel('Cancel')
@@ -200,7 +211,6 @@ module.exports = {
         const config = await readConfigFile();
 
         try {
-
             // Check for proper channel usage
             if(interaction.channel.id != config.userChannel && !isAdmin(interaction)) {
 
@@ -230,7 +240,7 @@ module.exports = {
                     nearestPlanet = i.values[0];
                     await i.update({ components: [new ActionRowBuilder().addComponents(isRushOrder)], ephemeral: true});
 
-                    // Rush order response and sending supply type selection
+                // Rush order response and sending supply type selection
                 } else if (i.customId === 'rushOrder') {
                     rushOrder = i.values[0];
                     await i.update({components: [new ActionRowBuilder().addComponents(selectShipSize)], ephemeral: true});
@@ -239,6 +249,7 @@ module.exports = {
                 } else if (i.customId === 'selectShipSize') {
                     shipSize = i.values[0];
 
+                    // Creating the thread for the alert, adding the user to it and sending the welcome message
                     const userChannel = await client.channels.fetch(config.userChannel);
                     const thread = await userChannel.threads.create({ name: `Refueling #${requestID}`, type: ChannelType.PrivateThread });
 
@@ -249,12 +260,14 @@ module.exports = {
                     await thread.members.add(requestClient.id);
                     await i.update({ephemeral: true, embeds: [generateConfirmationEmbed(requestID, thread)], components: []});
 
+                    // Sending alert to the logistics channel and registering all buttons
                     const logisticsChannel = await client.channels.fetch(config.logisticsChannel);
                     const alertMessage = await logisticsChannel.send({ embeds: [generateAlertEmbed(requestID, systemName, nearestPlanet, 'Open', requestClient, shipSize, 'Refuel', responderUser, rushOrder)], components: [new ActionRowBuilder().addComponents(respondButton)]});
                     const alertRespondButtonCollector = await alertMessage.createMessageComponentCollector({componentType: ComponentType.Button});
 
                     const archiveChannel = await client.channels.fetch(config.archiveChannel);
 
+                    // Handling of user cancellation
                     threadDeleteButtonCollector.on('collect', async i => {
                         const currentUser = await i.guild.members.fetch(i.member.id);
 
@@ -272,6 +285,7 @@ module.exports = {
                         }
                     })
 
+                    // Handling of logistics team interaction with the alert
                     alertRespondButtonCollector.on('collect', async i => {
                         if(!i.member.roles.cache.has(config.logisticsRole) && !isAdmin) {
                             await i.reply({ephemeral: true, content: 'You do not have the permission to interact with this.'});
@@ -280,12 +294,14 @@ module.exports = {
 
                         const currentUser = await i.guild.members.fetch(i.member.id);
                         
+                        // Creating a list of all responders to the alert
                         if(!responderUser.includes(currentUser)) {
                             responderUser.push(currentUser);
                         }
 
                         const allThreadMembers = await thread.members.fetch();
 
+                        // Handling of respond function and unwanted members
                         if(i.customId === 'respondButton') {
 
                             if(allThreadMembers.has(currentUser.user.id) || currentUser.user.id == requestClient.id) {
@@ -298,6 +314,8 @@ module.exports = {
                                 alertMessage.edit({embeds: [generateAlertEmbed(requestID, systemName, nearestPlanet, 'In progress...', requestClient, shipSize, 'Refuel', responderUser, rushOrder)], 
                                     components: [new ActionRowBuilder().addComponents([respondButton, abortButton, completeButton])]});
                             }
+
+                        // Handling of abort function and unwanted members
                         } else if (i.customId === 'abortButton') {
 
                             if(!allThreadMembers.has(currentUser.user.id)) {
@@ -312,6 +330,8 @@ module.exports = {
 
                                 archiveChannel.send({embeds: [generateAlertEmbed(requestID, systemName, nearestPlanet, 'Aborted', requestClient, shipSize, 'Refuel', responderUser, rushOrder)]});
                             }
+
+                        // Handling of complete function and unwanted members
                         } else if (i.customId === 'completeButton') {
 
                             if(!allThreadMembers.has(currentUser.user.id)) {

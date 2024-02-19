@@ -3,7 +3,6 @@ const { ActionRowBuilder, ButtonBuilder } = require('@discordjs/builders');
 const fs = require('fs');
 const selectables = require('../../resources/selectables.json');
 const path = require('path');
-
 const loreYear = new Date().getFullYear() + 930;
 
 /**
@@ -38,19 +37,26 @@ function readConfigFile() {
     }
 }
 
+/**
+ * Takes an interaction input and outputs the current member of the interaction
+ * @returns {member} Member of the current interaction.
+ */
 function getUser(interaction) {
     return interaction.member;
 }
 
 /**
- * Creates an alert embed message for a refuel request.
- * @param {string} requestID - The unique ID of the refuel request.
- * @param {string} systemName - The name of the system where refueling is requested.
+ * Creates an alert embed message for a resupply request.
+ * @param {string} requestID - The unique ID of the resupply request.
+ * @param {string} systemName - The name of the system where resupplying is requested.
  * @param {string} nearestPlanet - The nearest planet to the request location.
- * @param {string} requestStatus - The current status of the refuel request.
- * @param {string} clientUserName - The username of the client requesting refueling.
- * @param {string} shipSize - The size category of the ship requiring refueling.
- * @returns {EmbedBuilder} An EmbedBuilder object configured with the refuel request details.
+ * @param {string} requestStatus - The current status of the resupply request.
+ * @param {User} clientUserName - The user object of the client requesting resupplying.
+ * @param {Array<String>} requestedCategories - All requested item types.
+ * @param {string} requestType - The type of request that this alert is.
+ * @param {Array<User>} handledBy - An array of the user objects of the logistics members responding to the request.
+ * @param {string} rushOrder - The string containing information on whether or not the this order is a rush order.
+ * @returns {EmbedBuilder} An EmbedBuilder object configured with the resupply request details.
  */
 function generateAlertEmbed(requestID, systemName, nearestPlanet, requestStatus, clientUserName, requestedCategories, requestType, handledBy, rushOrder) {
     return new EmbedBuilder()
@@ -72,10 +78,10 @@ function generateAlertEmbed(requestID, systemName, nearestPlanet, requestStatus,
 }
 
 /**
- * Creates a confirmation embed message for a refuel request.
- * @param {string} requestID - The unique ID of the refuel request.
- * @param {ThreadChannel} openedThread - The thread channel opened for the refuel request.
- * @returns {EmbedBuilder} An EmbedBuilder object configured for confirming the refuel request receipt.
+ * Creates a confirmation embed message for a resupply request.
+ * @param {string} requestID - The unique ID of the resupply request.
+ * @param {ThreadChannel} openedThread - The thread channel opened for the resupply request.
+ * @returns {EmbedBuilder} An EmbedBuilder object configured for confirming the resupply request receipt.
  */
 function generateConfirmationEmbed(requestID, openedThread) {
     return new EmbedBuilder()
@@ -90,10 +96,10 @@ function generateConfirmationEmbed(requestID, openedThread) {
 } 
 
 /**
- * Creates a confirmation embed message for a refuel request.
- * @param {string} requestID - The unique ID of the refuel request.
- * @param {ThreadChannel} openedThread - The thread channel opened for the refuel request.
- * @returns {EmbedBuilder} An EmbedBuilder object configured for confirming the refuel request receipt.
+ * Creates a confirmation embed message for a resupply request.
+ * @param {string} requestID - The unique ID of the resupply request.
+ * @param {ThreadChannel} openedThread - The thread channel opened for the resupply request.
+ * @returns {EmbedBuilder} An EmbedBuilder object configured for confirming the resupply request receipt.
  */
 function generateThreadEmbed(requestID) {
     return new EmbedBuilder()
@@ -106,6 +112,12 @@ function generateThreadEmbed(requestID) {
         .setTimestamp();
 }
 
+/**
+ * Creates a confirmation embed message for closing a resupply request.
+ * @param {string} state - The state in which this request was closed.
+ * @param {User} user - The user object of the user closing the thread.
+ * @returns {EmbedBuilder} An EmbedBuilder object configured for confirming the closing of the resupply request.
+ */
 function generateCloseThreadEmbed(state, user) {
     return new EmbedBuilder()
         .setAuthor({ name: 'Logistics Active Resupply'})
@@ -114,8 +126,12 @@ function generateCloseThreadEmbed(state, user) {
         .setTimestamp();
 }
 
+/**
+ * Generates an embed with selectable item choices based on the supply types provided
+ * @param {Array<String>} supplyTypes - The types of supplies to include in the choices
+ * @returns {EmbedBuilder} The embed containing selectable item choices
+ */
 function generateItemChoicesEmbed(supplyTypes) {
-
     const possibleFields = [];
 
     if(supplyTypes.includes('Ammunition')) {
@@ -188,7 +204,6 @@ const selectSupplyTypes = new StringSelectMenuBuilder()
     })
 );
 
-// Cancel Button that deletes current thread
 const threadCancelButton = new ButtonBuilder()
 .setCustomId('threadCancelButton')
 .setLabel('Cancel')
@@ -228,11 +243,12 @@ module.exports = {
         const config = await readConfigFile();
 
         try {
+            // Check for proper channel usage
             if (interaction.channel.id != config.userChannel && !isAdmin(interaction)) {
 
                 const correctChannel = await client.channels.fetch(config.userChannel);
                 interaction.reply({ephemeral: true, content: `You are not allowed to use this command in this channel. Please try again in ${correctChannel} or contact a system administrator.`});
-    
+
             } else {
     
                 // Response to initial command
@@ -265,6 +281,7 @@ module.exports = {
                     } else if (i.customId === 'supplyTypes') {
                         supplyTypes = i.values;
                         
+                        // Creating the thread for the alert, adding the user to it and sending the welcome message
                         const userChannel = await client.channels.fetch(config.userChannel);
                         const thread = await userChannel.threads.create({ name: `Resupply #${requestID}`, type: ChannelType.PrivateThread });
     
@@ -275,6 +292,7 @@ module.exports = {
                         await thread.members.add(requestClient.id);
                         await i.update({ephemeral: true, embeds: [generateConfirmationEmbed(requestID, thread)], components: []});
     
+                        // Sending alert to the logistics channel and registering all buttons
                         const logisticsChannel = await client.channels.fetch(config.logisticsChannel);
                         const alertMessage = await logisticsChannel.send({ embeds: [generateAlertEmbed(requestID, systemName, nearestPlanet, 'Open', requestClient, supplyTypes, 'Resupply', responderUser, rushOrder)], components: [new ActionRowBuilder().addComponents(respondButton)]});
                         
@@ -288,6 +306,7 @@ module.exports = {
     
                         const archiveChannel = await client.channels.fetch(config.archiveChannel);
     
+                        // Handling of user cancellation
                         threadDeleteButtonCollector.on('collect', async i => {
                             const currentUser = await i.guild.members.fetch(i.member.id);
 
@@ -305,6 +324,7 @@ module.exports = {
                             }
                         })
 
+                        // Handling of logistics team interaction with the alert
                         alertRespondButtonCollector.on('collect', async i => {
                             if(!i.member.roles.cache.has(config.logisticsRole) && !isAdmin) {
                                 await i.reply({ephemeral: true, content: 'You do not have the permission to interact with this.'});
@@ -313,12 +333,14 @@ module.exports = {
     
                             const currentUser = await i.guild.members.fetch(i.member.id);
                             
+                            // Creating a list of all responders to the alert
                             if(!responderUser.includes(currentUser)) {
                                 responderUser.push(currentUser);
                             }
     
                             const allThreadMembers = await thread.members.fetch();
     
+                            // Handling of respond function and unwanted members
                             if(i.customId === 'respondButton') {
     
                                 if(allThreadMembers.has(currentUser.user.id) || currentUser.user.id == requestClient.id) {
@@ -331,6 +353,8 @@ module.exports = {
                                     alertMessage.edit({embeds: [generateAlertEmbed(requestID, systemName, nearestPlanet, 'In progress...', requestClient, supplyTypes, 'Resupply', responderUser, rushOrder)], 
                                         components: [new ActionRowBuilder().addComponents([respondButton, abortButton, completeButton])]});
                                 }
+
+                            // Handling of abort function and unwanted members
                             } else if (i.customId === 'abortButton') {
     
                                 if(!allThreadMembers.has(currentUser.user.id)) {
@@ -345,6 +369,8 @@ module.exports = {
     
                                     archiveChannel.send({embeds: [generateAlertEmbed(requestID, systemName, nearestPlanet, 'Aborted', requestClient, supplyTypes, 'Resupply', responderUser, rushOrder)]});
                                 }
+
+                            // Handling of complete function and unwanted members
                             } else if (i.customId === 'completeButton') {
     
                                 if(!allThreadMembers.has(currentUser.user.id)) {
