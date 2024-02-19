@@ -111,15 +111,15 @@ function generateItemChoicesEmbed(supplyTypes) {
     const possibleFields = [];
 
     if(supplyTypes.includes('Ammunition')) {
-        possibleFields.push({ name: 'Selectable Ammunition', value: `• ${selectables.ammunition.join('\n•')}`, inline: true })
+        possibleFields.push({ name: 'Selectable Ammunition', value: `• ${selectables.ammunition.join('\n• ')}`, inline: true })
     }
 
     if(supplyTypes.includes('Weaponry')) {
-        possibleFields.push({ name: 'Selectable Weapons', value: `• ${selectables.weaponry.join('\n•')}`, inline: true })
+        possibleFields.push({ name: 'Selectable Weapons', value: `• ${selectables.weaponry.join('\n• ')}`, inline: true })
     }
 
     if(supplyTypes.includes('Vehicles')) {
-        possibleFields.push({ name: 'Selectable Vehicles', value: `• ${selectables.vehicles.join('\n•')}`, inline: true })
+        possibleFields.push({ name: 'Selectable Vehicles', value: `• ${selectables.vehicles.join('\n• ')}`, inline: true })
     }
 
     return new EmbedBuilder()
