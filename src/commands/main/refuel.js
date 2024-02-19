@@ -52,7 +52,7 @@ function getUser(interaction) {
  * @param {string} shipSize - The size category of the ship requiring refueling.
  * @returns {EmbedBuilder} An EmbedBuilder object configured with the refuel request details.
  */
-function generateAlertEmbed(requestID, systemName, nearestPlanet, requestStatus, clientUserName, shipSize, requestType, handledBy) {
+function generateAlertEmbed(requestID, systemName, nearestPlanet, requestStatus, clientUserName, shipSize, requestType, handledBy, rushOrder) {
     return new EmbedBuilder()
         .setAuthor({ name: 'Logistics Active Resupply' })
         .setDescription(`Refuel Request #${requestID}`)
@@ -61,9 +61,10 @@ function generateAlertEmbed(requestID, systemName, nearestPlanet, requestStatus,
             { name: 'Nearest Planet', value: `${nearestPlanet}`, inline: true },
             { name: 'Status', value: `${requestStatus}`, inline: true },
             { name: 'Client', value: `${clientUserName}`, inline: true },
-            { name: 'Ship Size', value: `${shipSize}`, inline: true},
             { name: 'Request Type', value: `${requestType}`, inline: true},
-            { name: 'Request being handled by', value: `${handledBy}`, inline: false })
+            { name: 'Rush Order', value: `${rushOrder}`, inline: true},
+            { name: 'Ship Size', value: `${shipSize}`, inline: false},
+            { name: 'Request being handled by', value: `${handledBy.length > 0 ? handledBy.join('\n') : 'N/A'}`, inline: false })
         .setThumbnail('https://cdn.discordapp.com/avatars/1207431210528411668/69ef505a61c1fb847f56aa83b7042421?size=1024')
         .setColor('#9b0002')
         .setFooter({text: `L.A.R. ${loreYear}`})
@@ -129,6 +130,15 @@ const selectPlanet = new StringSelectMenuBuilder()
     })
 );
 
+// Select Menu for Rush Order
+const isRushOrder = new StringSelectMenuBuilder()
+.setCustomId('rushOrder')
+.setPlaceholder('Is this request a rush order?')
+.addOptions([
+    new StringSelectMenuOptionBuilder().setLabel('Yes').setValue('Yes'),
+    new StringSelectMenuOptionBuilder().setLabel('No').setValue('No')
+]);
+
 // Select Menu for Ship Size
 const selectShipSize = new StringSelectMenuBuilder()
 .setCustomId('selectShipSize')
@@ -175,6 +185,7 @@ module.exports = {
         let systemName;
         let nearestPlanet;
         let shipSize;
+        let rushOrder;
         let requestClient;
         const responderUser = [];
 
@@ -183,7 +194,7 @@ module.exports = {
         try {
 
             // Check for proper channel usage
-        if(interaction.channel.id != config.userChannel && !isAdmin(interaction)) {
+            if(interaction.channel.id != config.userChannel && !isAdmin(interaction)) {
 
             const correctChannel = await client.channels.fetch(config.userChannel);
             interaction.reply({ephemeral: true, content: `You are not allowed to use this command in this channel. Please try again in ${correctChannel} or contact a system administrator.`});
@@ -197,7 +208,7 @@ module.exports = {
             })
 
             // Collector of responses for Select Menu's
-            const selectMenuCollector = selectMenuResponse.createMessageComponentCollector({ componentType: ComponentType.StringSelect, time: 60_000});
+            const selectMenuCollector = selectMenuResponse.createMessageComponentCollector({ componentType: ComponentType.StringSelect, time: 300_000});
             
             selectMenuCollector.on('collect', async i => {
                 // System selection response storage and sending of planet selection
@@ -209,7 +220,12 @@ module.exports = {
                 // Planet selection response storage and sending of ship size selection
                 } else if (i.customId === 'selectPlanet') {
                     nearestPlanet = i.values[0];
-                    await i.update({ components: [new ActionRowBuilder().addComponents(selectShipSize)], ephemeral: true});
+                    await i.update({ components: [new ActionRowBuilder().addComponents(isRushOrder)], ephemeral: true});
+
+                    // Rush order response and sending supply type selection
+                } else if (i.customId === 'rushOrder') {
+                    rushOrder = i.values[0];
+                    await i.update({components: [new ActionRowBuilder().addComponents(selectShipSize)], ephemeral: true});
 
                 // Ship size storage and handling the issued thread
                 } else if (i.customId === 'selectShipSize') {
@@ -226,7 +242,7 @@ module.exports = {
                     await i.update({ephemeral: true, embeds: [generateConfirmationEmbed(requestID, thread)], components: []});
 
                     const logisticsChannel = await client.channels.fetch(config.logisticsChannel);
-                    const alertMessage = await logisticsChannel.send({ embeds: [generateAlertEmbed(requestID, systemName, nearestPlanet, 'Open', requestClient, shipSize, 'Refuel', 'N/A')], components: [new ActionRowBuilder().addComponents(respondButton)]});
+                    const alertMessage = await logisticsChannel.send({ embeds: [generateAlertEmbed(requestID, systemName, nearestPlanet, 'Open', requestClient, shipSize, 'Refuel', responderUser, rushOrder)], components: [new ActionRowBuilder().addComponents(respondButton)]});
                     const alertRespondButtonCollector = await alertMessage.createMessageComponentCollector({componentType: ComponentType.Button});
 
                     const archiveChannel = await client.channels.fetch(config.archiveChannel);
@@ -239,9 +255,9 @@ module.exports = {
                                 await i.reply({ephemeral: true, content: `You are not the client of this request and are thus not able to cancel it. If you are part of the response team and need to cancel this request, please use the Abort button in ${logisticsChannel}`});
                             } else {
                                 await i.reply({ephemeral: true, content: 'You have sucessfully cancelled this alert. This thread is now locked.'});
-                                thread.setArchived(true);
                                 alertMessage.delete();
-                                archiveChannel.send({embeds: [generateAlertEmbed(requestID, systemName, nearestPlanet, 'Cancelled', requestClient, supplyTypes, 'Resupply', 'N/A')]});
+                                thread.setArchived(true);
+                                archiveChannel.send({embeds: [generateAlertEmbed(requestID, systemName, nearestPlanet, 'Cancelled', requestClient, shipSize, 'Refuel', responderUser, rushOrder)]});
                             }
                         }
                     })
@@ -269,7 +285,7 @@ module.exports = {
                                 thread.members.add(currentUser.user.id);
                                 i.reply({ ephemeral: true, content: `You have succesfully replied to the request and have been added to ${thread}.`});
 
-                                alertMessage.edit({embeds: [generateAlertEmbed(requestID, systemName, nearestPlanet, 'In progress...', requestClient, shipSize, 'Refuel', responderUser[0])], 
+                                alertMessage.edit({embeds: [generateAlertEmbed(requestID, systemName, nearestPlanet, 'In progress...', requestClient, shipSize, 'Refuel', responderUser, rushOrder)], 
                                     components: [new ActionRowBuilder().addComponents([respondButton, abortButton, completeButton])]});
                             }
                         } else if (i.customId === 'abortButton') {
@@ -279,10 +295,10 @@ module.exports = {
     
                             } else {
                                 await i.reply({ephemeral: true, content: 'You have sucessfully closed this alert. This thread is now locked.'});
-                                thread.setArchived(true);
                                 alertMessage.delete();
+                                thread.setArchived(true);
 
-                                archiveChannel.send({embeds: [generateAlertEmbed(requestID, systemName, nearestPlanet, 'Aborted', requestClient, shipSize, 'Refuel', responderUser[0])]});
+                                archiveChannel.send({embeds: [generateAlertEmbed(requestID, systemName, nearestPlanet, 'Aborted', requestClient, shipSize, 'Refuel', responderUser, rushOrder)]});
                             }
                         } else if (i.customId === 'completeButton') {
 
@@ -291,10 +307,10 @@ module.exports = {
     
                             } else {
                                 await i.reply({ephemeral: true, content: 'You have sucessfully closed this alert. This thread is now locked.'});
-                                thread.setArchived(true);
                                 alertMessage.delete();
+                                thread.setArchived(true);
 
-                                const successEmbed = generateAlertEmbed(requestID, systemName, nearestPlanet, 'Completed', requestClient, shipSize, 'Refuel', responderUser[0]);
+                                const successEmbed = generateAlertEmbed(requestID, systemName, nearestPlanet, 'Completed', requestClient, shipSize, 'Refuel', responderUser, rushOrder);
                                 successEmbed.setColor('#57F287');
                                 archiveChannel.send({embeds: [successEmbed]});
                             }

@@ -15,6 +15,15 @@ function generateRandomID() {
     const max = 9999999;
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
+
+/**
+ * Checks if the user of an interaction is an administrator or not.
+ * @returns {boolean} True or false depending on if the user has admin permissions.
+ */
+function isAdmin(i) {
+    return i.member.permissionsIn(i.channel).has(PermissionsBitField.Flags.Administrator);
+}
+
 /**
  * Reads and parses the configuration file.
  * @returns {Object|null} The parsed JSON object from the config file, or null if an error occurs.
@@ -29,35 +38,9 @@ function readConfigFile() {
     }
 }
 
-/**
- * Checks if the user of an interaction is an administrator or not.
- * @returns {boolean} True or false depending on if the user has admin permissions.
- */
-function isAdmin(i) {
-    return i.member.permissionsIn(i.channel).has(PermissionsBitField.Flags.Administrator);
-}
-
 function getUser(interaction) {
     return interaction.member;
 }
-
-/**
- * Creates a confirmation embed message for a refuel request.
- * @param {string} requestID - The unique ID of the refuel request.
- * @param {ThreadChannel} openedThread - The thread channel opened for the refuel request.
- * @returns {EmbedBuilder} An EmbedBuilder object configured for confirming the refuel request receipt.
- */
-function generateConfirmationEmbed(requestID, openedThread) {
-    return new EmbedBuilder()
-        .setAuthor({ name: 'Logistics Active Resupply'})
-        .setTitle(`Resupply Request #${requestID}`)
-        .setDescription('Your resupply request has been received and will be handled by a member of the logistics team very soon. \n\nPlease visit the thread below or under this channel on your left to discuss further details with your logistics contact to expedite your location and subsequent resupply.')
-        .addFields({ name: 'Thread', value: `${openedThread}`, inline: false})
-        .setThumbnail('https://cdn.discordapp.com/avatars/1207431210528411668/69ef505a61c1fb847f56aa83b7042421?size=1024')
-        .setColor('#9b0002')
-        .setFooter({text: `L.A.R. ${loreYear}`})
-        .setTimestamp();
-} 
 
 /**
  * Creates an alert embed message for a refuel request.
@@ -87,6 +70,24 @@ function generateAlertEmbed(requestID, systemName, nearestPlanet, requestStatus,
         .setFooter({text: `L.A.R. ${loreYear}`})
         .setTimestamp();
 }
+
+/**
+ * Creates a confirmation embed message for a refuel request.
+ * @param {string} requestID - The unique ID of the refuel request.
+ * @param {ThreadChannel} openedThread - The thread channel opened for the refuel request.
+ * @returns {EmbedBuilder} An EmbedBuilder object configured for confirming the refuel request receipt.
+ */
+function generateConfirmationEmbed(requestID, openedThread) {
+    return new EmbedBuilder()
+        .setAuthor({ name: 'Logistics Active Resupply'})
+        .setTitle(`Resupply Request #${requestID}`)
+        .setDescription('Your resupply request has been received and will be handled by a member of the logistics team very soon. \n\nPlease visit the thread below or under this channel on your left to discuss further details with your logistics contact to expedite your location and subsequent resupply.')
+        .addFields({ name: 'Thread', value: `${openedThread}`, inline: false})
+        .setThumbnail('https://cdn.discordapp.com/avatars/1207431210528411668/69ef505a61c1fb847f56aa83b7042421?size=1024')
+        .setColor('#9b0002')
+        .setFooter({text: `L.A.R. ${loreYear}`})
+        .setTimestamp();
+} 
 
 /**
  * Creates a confirmation embed message for a refuel request.
@@ -173,19 +174,19 @@ const completeButton = new ButtonBuilder()
     .setLabel('Complete')
     .setStyle(ButtonStyle.Primary);
 
-
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('resupply')
         .setDescription('Calls an active resupply to your current location.')
         .setDMPermission(false),
+
     async execute(interaction) {
         const client = interaction.client;
         const requestID = generateRandomID();
         let systemName;
+        let nearestPlanet;
         let supplyTypes;
         let rushOrder;
-        let nearestPlanet;
         let requestClient;
         const responderUser = [];
 
@@ -206,7 +207,7 @@ module.exports = {
                 })
     
                 // Collector of responses for Select Menu's
-                const selectMenuCollector = selectMenuResponse.createMessageComponentCollector({ componentType: ComponentType.StringSelect, time: 60_000});
+                const selectMenuCollector = selectMenuResponse.createMessageComponentCollector({ componentType: ComponentType.StringSelect, time: 300_000});
                 
                 selectMenuCollector.on('collect', async i => {
                     // System selection response storage and sending of planet selection
