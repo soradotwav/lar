@@ -287,7 +287,7 @@ module.exports = {
     
                         const threadWelcomeMessage = await thread.send({ embeds: [generateThreadEmbed(requestID)], 
                             components: [new ActionRowBuilder().addComponents(threadCancelButton)]});
-                        const threadDeleteButtonCollector = await threadWelcomeMessage.createMessageComponentCollector({ componentType: ComponentType.Button });
+                        const threadDeleteButtonCollector = await threadWelcomeMessage.createMessageComponentCollector({ componentType: ComponentType.Button, time: 7_200_000});
     
                         await thread.members.add(requestClient.id);
                         await i.update({ephemeral: true, embeds: [generateConfirmationEmbed(requestID, thread)], components: []});
@@ -302,7 +302,7 @@ module.exports = {
                                 await thread.send({embeds: [generateItemChoicesEmbed(supplyTypes)]});
                             }
                         
-                        const alertRespondButtonCollector = await alertMessage.createMessageComponentCollector({componentType: ComponentType.Button});
+                        const alertRespondButtonCollector = await alertMessage.createMessageComponentCollector({componentType: ComponentType.Button, time: 7_200_000});
     
                         const archiveChannel = await client.channels.fetch(config.archiveChannel);
     

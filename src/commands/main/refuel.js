@@ -226,7 +226,7 @@ module.exports = {
             })
 
             // Collector of responses for Select Menu's
-            const selectMenuCollector = selectMenuResponse.createMessageComponentCollector({ componentType: ComponentType.StringSelect, time: 300_000});
+            const selectMenuCollector = selectMenuResponse.createMessageComponentCollector({ componentType: ComponentType.StringSelect,  time: 300_000});
             
             selectMenuCollector.on('collect', async i => {
                 // System selection response storage and sending of planet selection
@@ -255,7 +255,7 @@ module.exports = {
 
                     const threadWelcomeMessage = await thread.send({ embeds: [generateThreadEmbed(requestID)], 
                         components: [new ActionRowBuilder().addComponents(threadCancelButton)]});
-                    const threadDeleteButtonCollector = await threadWelcomeMessage.createMessageComponentCollector({ componentType: ComponentType.Button });
+                    const threadDeleteButtonCollector = await threadWelcomeMessage.createMessageComponentCollector({ componentType: ComponentType.Button,  time: 7_200_000 });
 
                     await thread.members.add(requestClient.id);
                     await i.update({ephemeral: true, embeds: [generateConfirmationEmbed(requestID, thread)], components: []});
@@ -263,7 +263,7 @@ module.exports = {
                     // Sending alert to the logistics channel and registering all buttons
                     const logisticsChannel = await client.channels.fetch(config.logisticsChannel);
                     const alertMessage = await logisticsChannel.send({ embeds: [generateAlertEmbed(requestID, systemName, nearestPlanet, 'Open', requestClient, shipSize, 'Refuel', responderUser, rushOrder)], components: [new ActionRowBuilder().addComponents(respondButton)]});
-                    const alertRespondButtonCollector = await alertMessage.createMessageComponentCollector({componentType: ComponentType.Button});
+                    const alertRespondButtonCollector = await alertMessage.createMessageComponentCollector({componentType: ComponentType.Button,  time: 7_200_000});
 
                     const archiveChannel = await client.channels.fetch(config.archiveChannel);
 
