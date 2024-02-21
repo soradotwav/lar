@@ -295,7 +295,7 @@ module.exports = {
                         const currentUser = await i.guild.members.fetch(i.member.id);
                         
                         // Creating a list of all responders to the alert
-                        if(!responderUser.includes(currentUser)) {
+                        if(!responderUser.includes(currentUser) && currentUser.id !== requestClient.id) {
                             responderUser.push(currentUser);
                         }
 
